@@ -13,14 +13,12 @@ class Detector
 private:
 	cv::Mat frame;
 	cv::Mat outputFrame;
-	std::vector<cv::Size> gridSizes;
+	std::vector<BoundingBox> scanGrids;
 	
 	PatchVariance patchVariance;
 	EnsembleClassifier ensembleClassifier;
 
-	void generateGridSizes(const BoundingBox& initBoundingBox);
-
-	int stepH, stepV;
+	void generateScanGrids(const BoundingBox& initBoundingBox);
 
 public:
 	Detector();
@@ -31,6 +29,11 @@ public:
 	inline EnsembleClassifier& getEnsembleClassifier()
 	{
 		return ensembleClassifier;
+	}
+
+	inline const std::vector<BoundingBox>& getScanGrids()
+	{
+		return scanGrids;
 	}
 };
 

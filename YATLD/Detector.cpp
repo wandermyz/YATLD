@@ -13,10 +13,7 @@ void Detector::init(const cv::Mat& frame, const BoundingBox& boundingBox, Mat& o
 	this->frame = frame;
 	this->outputFrame = outputFrame;
 
-	stepH = (int)(STEP_H * frame.cols + 0.5);
-	stepV = (int)(STEP_V * frame.rows + 0.5);
-
-	generateGridSizes(boundingBox);
+	generateScanGrids(boundingBox);
 	patchVariance.init(frame, boundingBox);
 
 	ensembleClassifier.init();
@@ -34,43 +31,35 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 	patchVariance.update(frame);
 	ensembleClassifier.update(frame);
 
-	BoundingBox patch;
-
-	for (vector<Size>::const_iterator scaleIt = gridSizes.begin(); scaleIt != gridSizes.end(); ++scaleIt)
+	for (vector<BoundingBox>::const_iterator patchIt = scanGrids.begin(); patchIt != scanGrids.end(); ++patchIt)
 	{
-		patch.width = scaleIt->width;
-		patch.height = scaleIt->height;
+		//refersh overlap
+		//TODO
 
-		for (patch.y = 0; patch.br().y <= frame.rows; patch.y += stepV)
+#ifdef DEBUG
+		nPatches++;
+		//rectangle(outputFrame, patch, Scalar(255,255,255));
+#endif
+		if (!patchVariance.acceptPatch(*patchIt))
 		{
-			for (patch.x = 0; patch.br().x <= frame.cols; patch.x += stepH)
-			{
-#ifdef DEBUG
-				nPatches++;
-				//rectangle(outputFrame, patch, Scalar(255,255,255));
-#endif
-				if (!patchVariance.acceptPatch(patch))
-				{
-					continue;
-				}
-
-				//Ensemble classifier
-#ifdef DEBUG
-				nEnsemblePatches++;
-				//rectangle(outputFrame, patch, Scalar(255,0,0), 2);
-#endif
-				if (!ensembleClassifier.accept(patch))
-				{
-					continue;
-				}
-
-				//NN classifier
-#ifdef DEBUG
-				nNNPatches++;
-				rectangle(outputFrame, patch, Scalar(255,0,0), 2);
-#endif
-			}
+			continue;
 		}
+
+		//Ensemble classifier
+#ifdef DEBUG
+		nEnsemblePatches++;
+		//rectangle(outputFrame, patch, Scalar(255,0,0), 2);
+#endif
+		if (!ensembleClassifier.accept(*patchIt))
+		{
+			continue;
+		}
+
+		//NN classifier
+#ifdef DEBUG
+		nNNPatches++;
+		rectangle(outputFrame, *patchIt, Scalar(255,0,0), 2);
+#endif
 	}
 
 #ifdef DEBUG
@@ -80,8 +69,9 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 #endif
 }
 
-void Detector::generateGridSizes(const BoundingBox& initBoundingBox)
+void Detector::generateScanGrids(const BoundingBox& initBoundingBox)
 {
+	vector<Size> gridSizes;
 	Size bbSize = initBoundingBox.size();
 	double scale = 1.0;
 	while (bbSize.width <= frame.cols && bbSize.height <= frame.rows)
@@ -100,5 +90,26 @@ void Detector::generateGridSizes(const BoundingBox& initBoundingBox)
 		scale /= 1.2;
 		bbSize = Size((int)(initBoundingBox.width * scale + 0.5), (int)(initBoundingBox.height * scale + 0.5));
 	}
+
+	int stepH = (int)(STEP_H * frame.cols + 0.5);
+	int stepV = (int)(STEP_V * frame.rows + 0.5);
+
+	BoundingBox patch;
+	for (vector<Size>::const_iterator scaleIt = gridSizes.begin(); scaleIt != gridSizes.end(); ++scaleIt)
+	{
+		patch.width = scaleIt->width;
+		patch.height = scaleIt->height;
+
+		for (patch.y = 0; patch.br().y <= frame.rows; patch.y += stepV)
+		{
+			for (patch.x = 0; patch.br().x <= frame.cols; patch.x += stepH)
+			{
+				patch.refreshOverlap(initBoundingBox);
+				scanGrids.push_back(patch);
+			}
+		}
+	}
 }
+
+
 
