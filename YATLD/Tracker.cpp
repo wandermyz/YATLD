@@ -33,6 +33,12 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 		}
 	}
 
+	//draw grid
+	for (int i = 0; i < prevPoints.size(); i++)
+	{
+		circle(outputFrame, prevPoints[i], 2, Scalar(255, 255, 255), 1);
+	}
+
 	//L-K optical flow
 	calcOpticalFlowPyrLK(prevFrame, frame, prevPoints, nextPoints, status, errors, lkWindowSize, LK_LEVEL, lkTermCreteria);
 	calcOpticalFlowPyrLK(frame, prevFrame, nextPoints, backwardPoints, backwardStatus, backwardErrors, lkWindowSize, LK_LEVEL, lkTermCreteria);
@@ -56,6 +62,17 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 	cout << "Filtered by status: " << nGoodPoints << endl;
 #endif
 
+	//compute NCC
+	Mat prevSub, nextSub, res;
+	for (int i = 0; i < nGoodPoints; i++)
+	{
+		getRectSubPix( prevFrame, Size(TRACKER_GRID_PATCH_SIZE,TRACKER_GRID_PATCH_SIZE), prevPoints[i], prevSub);
+		getRectSubPix( frame, Size(TRACKER_GRID_PATCH_SIZE,TRACKER_GRID_PATCH_SIZE), nextPoints[i], nextSub);
+		matchTemplate( prevSub, nextSub, res, CV_TM_CCOEFF_NORMED);
+		errors[i] = res.at<float>(0);	
+	}
+
+	
 	//filter by errors
 	float medianErr = median(errors, nGoodPoints);
 	k = 0;
@@ -70,6 +87,7 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 		}
 	}
 	nGoodPoints = k;
+	
 
 #ifdef DEBUG
 	cout << "Filtered by errors: " << nGoodPoints << endl;
@@ -87,6 +105,14 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 	}
 
 	float medianFbErr = median(fbErrors, nGoodPoints);
+
+	vector<float> tmp(fbErrors);
+	sort(tmp.begin(), tmp.end());
+	for (int i = 0; i < tmp.size(); i++)
+	{
+		cout << tmp[i] << endl;
+	}
+	cout << "median = " << medianFbErr << endl;
 
 	//filter by FB errors
  	k = 0;
@@ -131,5 +157,7 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 		line(outputFrame, prevPoints[i], nextPoints[i], Scalar(0, 255, 0), 1);
 	}
 	rectangle(outputFrame, prevBoundingBox, (0, 255, 255), 2);
+
+	prevFrame = frame.clone();
 }
 
