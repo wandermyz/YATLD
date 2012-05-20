@@ -74,6 +74,7 @@ void Trainer::init(const cv::Mat& frame, const BoundingBox& boundingBox)
 
 			detector.getEnsembleClassifier().update(warpedImg);
 			detector.getEnsembleClassifier().train(Rect(0, 0, warpedImg.cols, warpedImg.rows), true);
+			detector.getNNClassifier().train(warpedImg, true);
 		}
 
 		positiveCount++;
@@ -86,6 +87,7 @@ void Trainer::init(const cv::Mat& frame, const BoundingBox& boundingBox)
 	{
 		const BoundingBox& patch = *negativePatches[negativeCount];
 		detector.getEnsembleClassifier().train(patch, false);
+		detector.getNNClassifier().train(frame(patch), false);
 
 		/*cout << patch.getOverlap() << endl;
 		Mat tmp = frame.clone();

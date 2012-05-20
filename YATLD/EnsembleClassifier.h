@@ -26,7 +26,7 @@ public:
 	}
 
 	void train(const BoundingBox& patch, bool isPositive);
-	bool accept(const BoundingBox& patch) const;
+	bool acceptPatch(const BoundingBox& patch) const;
 };
 
 

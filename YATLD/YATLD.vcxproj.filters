@@ -36,6 +36,12 @@
     <ClCompile Include="PixelComparator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="NNClassifier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Tracker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TLD.h">
@@ -60,6 +66,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BoundingBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NNClassifier.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Tracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

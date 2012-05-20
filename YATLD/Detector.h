@@ -6,6 +6,7 @@
 #include "Settings.h"
 #include "PatchVariance.h"
 #include "EnsembleClassifier.h"
+#include "NNClassifier.h"
 #include "BoundingBox.h"
 
 class Detector
@@ -17,6 +18,7 @@ private:
 	
 	PatchVariance patchVariance;
 	EnsembleClassifier ensembleClassifier;
+	NNClassifier nnClassifier;
 
 	void generateScanGrids(const BoundingBox& initBoundingBox);
 
@@ -34,6 +36,11 @@ public:
 	inline const std::vector<BoundingBox>& getScanGrids()
 	{
 		return scanGrids;
+	}
+
+	inline NNClassifier& getNNClassifier()
+	{
+		return nnClassifier;
 	}
 };
 

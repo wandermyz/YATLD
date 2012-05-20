@@ -3,7 +3,8 @@
 
 #include <opencv.hpp>
 
-#define MIN_BB_AREA 50
+//#define MIN_BB_AREA 50
+#define MIN_BB_SIDE 20
 #define STEP_H 0.1
 #define STEP_V 0.1
 #define STEP_S 1.2
@@ -24,5 +25,17 @@
 #define FERN_INDEX_SIZE 8192	//2^13 = 8192
 #define FERN_GAUSSIAN_SIGMA 3
 
+#define NORMALIZED_PATCH_SIZE 15
+#define NN_THRESHOLD 0.6
+
+#define TRACKER_GRID_POINT_NUM_H 10
+#define TRACKER_GRID_POINT_NUM_V 10
+#define TRACKER_GRID_PATCH_SIZE 10
+#define LK_WINDOW_SIZE 4
+#define LK_LEVEL 5
+#define LK_TERM_COUNT 20
+#define LK_TERM_EPSILON 0.03
+
+#define TRACKER_GRID_POINT_NUM TRACKER_GRID_POINT_NUM_H * TRACKER_GRID_POINT_NUM_V
 
 #endif

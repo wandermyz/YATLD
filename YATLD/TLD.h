@@ -6,6 +6,7 @@
 #include "Detector.h"
 #include "Trainer.h"
 #include "BoundingBox.h"
+#include "Tracker.h"
 
 class TLD
 {
@@ -14,6 +15,7 @@ private:
 	cv::Mat outputFrame;
 	BoundingBox boundingBox;
 
+	Tracker tracker;
 	Detector detector;
 	Trainer trainer;
 

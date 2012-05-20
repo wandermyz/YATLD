@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 	cap >> rgbFrame;
 	outputFrame = rgbFrame.clone();
 	cvtColor(rgbFrame, frame, CV_RGB2GRAY);
-	
+	 
 	tld.init(frame, boundingBox, outputFrame);
 	imshow("video", outputFrame);
 

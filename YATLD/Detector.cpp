@@ -25,7 +25,8 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 	this->outputFrame = outputFrame;
 
 #ifdef DEBUG
-	int nPatches = 0, nEnsemblePatches = 0, nNNPatches = 0;
+	int nPatches = 0, nEnsemblePatches = 0, nNNPatches = 0, nFinalPatches = 0;
+	float maxNNSimilarity = 0;
 #endif
 
 	patchVariance.update(frame);
@@ -50,7 +51,7 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 		nEnsemblePatches++;
 		//rectangle(outputFrame, patch, Scalar(255,0,0), 2);
 #endif
-		if (!ensembleClassifier.accept(*patchIt))
+		if (!ensembleClassifier.acceptPatch(*patchIt))
 		{
 			continue;
 		}
@@ -58,14 +59,42 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 		//NN classifier
 #ifdef DEBUG
 		nNNPatches++;
-		rectangle(outputFrame, *patchIt, Scalar(255,0,0), 2);
+		rectangle(outputFrame, *patchIt, Scalar(255,0,0), 1);
 #endif
+
+#ifdef DEBUG
+		float sim = nnClassifier.getRelativeSimilarity(frame(*patchIt));
+		if (sim > maxNNSimilarity)
+		{
+			maxNNSimilarity = sim;
+		}
+		if (sim <= NN_THRESHOLD)
+		{
+			continue;
+		}
+#else
+		if (!nnClassifier.acceptPatch(frame(*patchIt))) 
+		{
+			continue;
+		}
+#endif
+
+		//final
+#ifdef DEBUG
+		nFinalPatches++;
+#endif
+
+		rectangle(outputFrame, *patchIt, Scalar(255,0,0), 2);
+		
 	}
 
 #ifdef DEBUG
 	cout << "Total patches: " << nPatches << endl;
 	cout << "After Patch variance: " << nEnsemblePatches << endl;
 	cout << "After Ensemble classifier: " << nNNPatches << endl;
+	cout << "After NN classifier: " << nFinalPatches << endl;
+	cout << "Maximum NN Similairty: " << maxNNSimilarity << endl;
+	cout << endl;
 #endif
 }
 
@@ -84,21 +113,30 @@ void Detector::generateScanGrids(const BoundingBox& initBoundingBox)
 
 	scale = 1.0 / STEP_S;
 	bbSize = Size((int)(initBoundingBox.width * scale + 0.5), (int)(initBoundingBox.height * scale + 0.5));
-	while (bbSize.width * bbSize.height >= MIN_BB_AREA)
+	//while (bbSize.width * bbSize.height >= MIN_BB_AREA)
+	while (bbSize.width >= MIN_BB_SIDE && bbSize.height >= MIN_BB_SIDE)
 	{
 		gridSizes.push_back(bbSize);
 		scale /= 1.2;
 		bbSize = Size((int)(initBoundingBox.width * scale + 0.5), (int)(initBoundingBox.height * scale + 0.5));
 	}
 
-	int stepH = (int)(STEP_H * frame.cols + 0.5);
-	int stepV = (int)(STEP_V * frame.rows + 0.5);
+	//int stepH = (int)(STEP_H * frame.cols + 0.5);
+	//int stepV = (int)(STEP_V * frame.rows + 0.5);
 
 	BoundingBox patch;
 	for (vector<Size>::const_iterator scaleIt = gridSizes.begin(); scaleIt != gridSizes.end(); ++scaleIt)
 	{
 		patch.width = scaleIt->width;
 		patch.height = scaleIt->height;
+
+		int minSide = min(scaleIt->width, scaleIt->height);
+		int stepH = (int)(STEP_H * scaleIt->width + 0.5);
+		int stepV = (int)(STEP_V * scaleIt->height + 0.5);
+
+#ifdef DEBUG
+		assert(stepH >= 1 && stepV >= 1);
+#endif
 
 		for (patch.y = 0; patch.br().y <= frame.rows; patch.y += stepV)
 		{

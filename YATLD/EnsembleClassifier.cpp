@@ -32,7 +32,7 @@ void EnsembleClassifier::train(const BoundingBox& patch, bool isPositive)
 	}
 }
 
-bool EnsembleClassifier::accept(const BoundingBox& patch) const
+bool EnsembleClassifier::acceptPatch(const BoundingBox& patch) const
 {
 	double posterior = 0;
 	for (int i = 0; i < NUM_FERNS; i++)
