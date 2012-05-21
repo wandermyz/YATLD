@@ -18,6 +18,8 @@ void Tracker::init(const Mat& frame, const BoundingBox& initBoundingBox)
 
 void Tracker::update(const Mat& frame, Mat& outputFrame)
 {
+	tracked = false;
+	
 	//generate grid points
 	prevPoints.clear();
 	Point p;
@@ -39,128 +41,148 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 		circle(outputFrame, prevPoints[i], 2, Scalar(255, 255, 255), 1);
 	}
 
-	//L-K optical flow
-	calcOpticalFlowPyrLK(prevFrame, frame, prevPoints, nextPoints, status, errors, lkWindowSize, LK_LEVEL, lkTermCreteria);
-
-	//filter by status
-	int k = 0;
-	for (int i = 0; i < nextPoints.size(); i++)
+	do
 	{
-		if (status[i] == 1 /*&& backwardStatus[i] == 1*/)
+		//L-K optical flow
+		calcOpticalFlowPyrLK(prevFrame, frame, prevPoints, nextPoints, status, errors, lkWindowSize, LK_LEVEL, lkTermCreteria);
+
+		//filter by status
+		int k = 0;
+		for (int i = 0; i < nextPoints.size(); i++)
 		{
-			prevPoints[k] = prevPoints[i];
-			nextPoints[k] = nextPoints[i];
-			k++;
+			if (status[i] == 1 /*&& backwardStatus[i] == 1*/)
+			{
+				prevPoints[k] = prevPoints[i];
+				nextPoints[k] = nextPoints[i];
+				k++;
+			}
 		}
-	}
-	nGoodPoints = k;
+		if (k == 0)
+		{
+			break;
+		}
+		nGoodPoints = k;
 
-#ifdef DEBUG
-	cout << "Filtered by status: " << nGoodPoints << endl;
-#endif
+	#ifdef DEBUG
+		cout << "Filtered by status: " << nGoodPoints << endl;
+	#endif
 
-	//compute NCC
-	ncc.clear();
-	Mat prevSub, nextSub, res;
-	for (int i = 0; i < nGoodPoints; i++)
-	{
-		getRectSubPix( prevFrame, Size(TRACKER_GRID_PATCH_SIZE,TRACKER_GRID_PATCH_SIZE), prevPoints[i], prevSub);
-		getRectSubPix( frame, Size(TRACKER_GRID_PATCH_SIZE,TRACKER_GRID_PATCH_SIZE), nextPoints[i], nextSub);
-		matchTemplate( prevSub, nextSub, res, CV_TM_CCOEFF_NORMED);
-		ncc.push_back(res.at<float>(0));
-	}
+		//compute NCC
+		ncc.clear();
+		Mat prevSub, nextSub, res;
+		for (int i = 0; i < nGoodPoints; i++)
+		{
+			getRectSubPix( prevFrame, Size(TRACKER_GRID_PATCH_SIZE,TRACKER_GRID_PATCH_SIZE), prevPoints[i], prevSub);
+			getRectSubPix( frame, Size(TRACKER_GRID_PATCH_SIZE,TRACKER_GRID_PATCH_SIZE), nextPoints[i], nextSub);
+			matchTemplate( prevSub, nextSub, res, CV_TM_CCOEFF_NORMED);
+			ncc.push_back(res.at<float>(0));
+		}
 
 	
-	//filter by NCC
-	float medianNcc = median(ncc, nGoodPoints);
-	k = 0;
-	for (int i = 0; i < nGoodPoints; i++)
-	{
-		if (ncc[i] > medianNcc)
+		//filter by NCC
+		float medianNcc = median(ncc, nGoodPoints);
+		k = 0;
+		for (int i = 0; i < nGoodPoints; i++)
 		{
-			prevPoints[k] = prevPoints[i];
-			nextPoints[k] = nextPoints[i];
-			k++;
+			if (ncc[i] > medianNcc)
+			{
+				prevPoints[k] = prevPoints[i];
+				nextPoints[k] = nextPoints[i];
+				k++;
+			}
 		}
-	}
-	nGoodPoints = k;
+		if (k == 0)
+		{
+			break;
+		}
+		nGoodPoints = k;
 	
 
-#ifdef DEBUG
-	cout << "Filtered by errors: " << nGoodPoints << endl;
-#endif
+	#ifdef DEBUG
+		cout << "Filtered by errors: " << nGoodPoints << endl;
+	#endif
 
-	//Backward L-K optical flow
-	nextPoints.erase(nextPoints.begin() + nGoodPoints, nextPoints.end());
-	calcOpticalFlowPyrLK(frame, prevFrame, nextPoints, backwardPoints, backwardStatus, backwardErrors, lkWindowSize, LK_LEVEL, lkTermCreteria);
+		//Backward L-K optical flow
+		nextPoints.erase(nextPoints.begin() + nGoodPoints, nextPoints.end());
+		calcOpticalFlowPyrLK(frame, prevFrame, nextPoints, backwardPoints, backwardStatus, backwardErrors, lkWindowSize, LK_LEVEL, lkTermCreteria);
 	
-	//filter by backward status
-	k = 0;
-	for (int i = 0; i < nGoodPoints; i++)
-	{
-		if (backwardStatus[i] == 1)
+		//filter by backward status
+		k = 0;
+		for (int i = 0; i < nGoodPoints; i++)
 		{
-			prevPoints[k] = prevPoints[i];
-			nextPoints[k] = nextPoints[i];
-			k++;
+			if (backwardStatus[i] == 1)
+			{
+				prevPoints[k] = prevPoints[i];
+				nextPoints[k] = nextPoints[i];
+				k++;
+			}
 		}
-	}
-	nGoodPoints = k;
-
-	//compute FB errors
-	fbErrors.clear();
-	for (int i = 0; i < nGoodPoints; i++)
-	{
-		fbErrors.push_back(pow((float)(backwardPoints[i].x - prevPoints[i].x), 2) + pow((float)(backwardPoints[i].y - prevPoints[i].y), 2));
-	}
-
-	float medianFbErr = median(fbErrors, nGoodPoints);
-
-	//filter by FB errors
- 	k = 0;
-	for (int i = 0; i < nGoodPoints; i++)
-	{
-		if (fbErrors[i] <= medianFbErr)
+		if (k == 0)
 		{
-			nextPoints[k] = nextPoints[i];
-			prevPoints[k] = prevPoints[i];
-			k++;
+			break;
 		}
-	}
-	nGoodPoints = k;
+		nGoodPoints = k;
 
-#ifdef DEBUG
-	cout << "Filtered by FB: " << nGoodPoints << endl;
-#endif
+		//compute FB errors
+		fbErrors.clear();
+		for (int i = 0; i < nGoodPoints; i++)
+		{
+			fbErrors.push_back(pow((float)(backwardPoints[i].x - prevPoints[i].x), 2) + pow((float)(backwardPoints[i].y - prevPoints[i].y), 2));
+		}
 
-	//find x, y offsets
-	xOffsets.clear();
-	yOffsets.clear();
-	displacement.clear();
-	for (int i = 0; i < nGoodPoints; i++)
-	{
-		xOffsets.push_back(nextPoints[i].x - prevPoints[i].x);
-		yOffsets.push_back(nextPoints[i].y - prevPoints[i].y);
-		displacement.push_back(sqrt(pow(xOffsets[i], 2) + pow(yOffsets[i], 2)));
-	}
+		float medianFbErr = median(fbErrors, nGoodPoints);
 
-	float xOffset = median(xOffsets);
-	float yOffset = median(yOffsets);
-	float displacementMedian = median(displacement);
-	cout << displacementMedian << endl;
+		//filter by FB errors
+ 		k = 0;
+		for (int i = 0; i < nGoodPoints; i++)
+		{
+			if (fbErrors[i] <= medianFbErr)
+			{
+				nextPoints[k] = nextPoints[i];
+				prevPoints[k] = prevPoints[i];
+				k++;
+			}
+		}
+		if (k == 0)
+		{
+			break;
+		}
+		nGoodPoints = k;
 
-	//find residual
-	residual.clear();
-	for (int i = 0; i < nGoodPoints; i++)
-	{
-		residual.push_back(abs(displacement[i] - displacementMedian));
-	}
-	float residualMedian = median(residual);
-	cout << residualMedian << endl;
+	#ifdef DEBUG
+		cout << "Filtered by FB: " << nGoodPoints << endl;
+	#endif
 
-	tracked = residualMedian <= LK_FAILURE_RESIDUAL;
-	if (tracked)
-	{
+		//find x, y offsets
+		xOffsets.clear();
+		yOffsets.clear();
+		displacement.clear();
+		for (int i = 0; i < nGoodPoints; i++)
+		{
+			xOffsets.push_back(nextPoints[i].x - prevPoints[i].x);
+			yOffsets.push_back(nextPoints[i].y - prevPoints[i].y);
+			displacement.push_back(sqrt(pow(xOffsets[i], 2) + pow(yOffsets[i], 2)));
+		}
+
+		float xOffset = median(xOffsets);
+		float yOffset = median(yOffsets);
+		float displacementMedian = median(displacement);
+		//cout << displacementMedian << endl;
+
+		//find residual
+		residual.clear();
+		for (int i = 0; i < nGoodPoints; i++)
+		{
+			residual.push_back(abs(displacement[i] - displacementMedian));
+		}
+		float residualMedian = median(residual);
+		//cout << residualMedian << endl;
+
+		if (residualMedian > LK_FAILURE_RESIDUAL)
+		{
+			break;
+		}
+
 		//find scale
 		sqScales.clear();
 		for (int i = 0; i < nGoodPoints; i++)
@@ -189,7 +211,9 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 
 		//find conservative similarity
 		Rect trimmed = prevBoundingBox & Rect(0, 0, frame.cols, frame.rows);
-		detector.getNNClassifier().getSimilarity(frame(trimmed), NULL, &prevBoundingBox.confidence);
+		float relativeSim;
+		detector.getNNClassifier().getSimilarity(frame(trimmed), &relativeSim, &prevBoundingBox.confidence);
+		prevBoundingBox.positive = relativeSim > NN_THRESHOLD;
 
 		//draw output
 		for (int i = 0; i < nGoodPoints; i++) 
@@ -199,7 +223,9 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 			line(outputFrame, prevPoints[i], nextPoints[i], Scalar(0, 255, 0), 1);
 		}
 		//rectangle(outputFrame, prevBoundingBox, Scalar(0, 255, 255), 2);
-	}
+
+		tracked = true;
+	} while(0);
 	
 	prevFrame = frame.clone();
 }

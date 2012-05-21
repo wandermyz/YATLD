@@ -4,8 +4,12 @@
 using namespace cv;
 using namespace std;
 
-BoundingBox readBoundingBox(char* file){
+BoundingBox readBoundingBox(const string& file){
   ifstream bb_file (file);
+  if (!bb_file)
+  {
+	  cerr << "Error opening file: " << file << endl;
+  }
   string line;
   getline(bb_file,line);
   istringstream linestream(line);
@@ -25,14 +29,31 @@ int main(int argc, char* argv[])
 {
 	TLD tld;
 
-	VideoCapture cap(argv[1]);
-	
-	if (!cap.isOpened())
+	string videoPath, initPath;
+	if (argc == 4 && string(argv[1]) == "-s")
+	{
+		videoPath = string("..\\..\\datasets\\") + argv[2] + "_" + argv[3] + "\\" + argv[3] + ".mpg";
+		initPath = string("..\\..\\datasets\\") + argv[2] + "_" + argv[3] + "\\" + "init.txt";
+	}
+	else if (argc == 3)
+	{
+		videoPath = argv[1];
+		initPath = argv[2];
+	}
+	else
 	{
 		return -1;
 	}
 
-	BoundingBox boundingBox = readBoundingBox(argv[2]);
+	VideoCapture cap(videoPath);
+	
+	if (!cap.isOpened())
+	{
+		cerr << "Error opening file: " << videoPath << endl;
+		return -1;
+	}
+
+	BoundingBox boundingBox = readBoundingBox(initPath);
 
 	namedWindow("video", 1);
 	
@@ -45,7 +66,7 @@ int main(int argc, char* argv[])
 	tld.init(frame, boundingBox, outputFrame);
 	imshow("video", outputFrame);
 
-	while(waitKey() != 27)
+	while(waitKey(1) != 27)
 	{	
 		cap >> rgbFrame;
 		outputFrame = rgbFrame.clone();

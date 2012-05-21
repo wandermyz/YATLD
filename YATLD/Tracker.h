@@ -53,14 +53,14 @@ public:
 	void init(const cv::Mat& frame, const BoundingBox& initBoundingBox);
 	void update(const cv::Mat& frame, cv::Mat& outputFrame);
 
-	inline const BoundingBox getBoundingBox() const
+	inline void reset(const BoundingBox& boundingBox)
 	{
-		return prevBoundingBox;
+		prevBoundingBox = boundingBox;
 	}
 
-	inline bool isTracked() const
+	inline const BoundingBox* getBoundingBox() const
 	{
-		return tracked;
+		return tracked ? &prevBoundingBox : NULL;
 	}
 };
 

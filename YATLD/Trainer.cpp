@@ -7,7 +7,7 @@
 using namespace cv;
 using namespace std;
 
-Trainer::Trainer(Detector& detector) : detector(detector)
+Trainer::Trainer(Detector& detector, Tracker& tracker) : detector(detector), tracker(tracker)
 {
 	
 }
@@ -102,3 +102,11 @@ void Trainer::init(const cv::Mat& frame, const BoundingBox& boundingBox)
 #endif
 }
 
+void Trainer::update(const Mat& frame)
+{
+	if ( detector.getBoundingBox() != NULL
+		&& (tracker.getBoundingBox() == NULL || detector.getBoundingBox()->confidence > tracker.getBoundingBox()->confidence))
+	{
+		tracker.reset(*detector.getBoundingBox());
+	}
+}

@@ -74,6 +74,7 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 			maxNNSimilarity = relativeSim;
 			maxNNpatchIt = patchIt;
 		}
+
 		if (relativeSim <= NN_THRESHOLD)
 		{
 			continue;
@@ -100,7 +101,7 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 	//rectangle(outputFrame, *maxNNpatchIt, Scalar(0, 0, 255), 2);
 #endif
 
-	finalBoundingBox = &(*maxNNpatchIt);
+	finalBoundingBox = maxNNSimilarity <= NN_THRESHOLD ? NULL : &(*maxNNpatchIt);
 }
 
 void Detector::generateScanGrids(const BoundingBox& initBoundingBox)

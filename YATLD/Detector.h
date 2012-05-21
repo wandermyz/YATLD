@@ -45,9 +45,9 @@ public:
 		return nnClassifier;
 	}
 
-	inline const BoundingBox& getBoudingBox()
+	inline const BoundingBox* getBoundingBox()
 	{
-		return *finalBoundingBox;
+		return finalBoundingBox;
 	}
 };
 
