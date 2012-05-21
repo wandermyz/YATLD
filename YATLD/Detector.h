@@ -20,6 +20,8 @@ private:
 	EnsembleClassifier ensembleClassifier;
 	NNClassifier nnClassifier;
 
+	const BoundingBox* finalBoundingBox;	//TODO: clustering
+
 	void generateScanGrids(const BoundingBox& initBoundingBox);
 
 public:
@@ -41,6 +43,11 @@ public:
 	inline NNClassifier& getNNClassifier()
 	{
 		return nnClassifier;
+	}
+
+	inline const BoundingBox& getBoudingBox()
+	{
+		return *finalBoundingBox;
 	}
 };
 

@@ -13,9 +13,9 @@ private:
 
 public:
 	void train(const cv::Mat& patchImg, bool isPositive);
-	float getRelativeSimilarity(const cv::Mat& patchImg) const;
+	void getSimilarity(const cv::Mat& patchImg, float* relative, float* conservative) const;
 	
-	inline float getSimilarity(const cv::Mat& patch, const cv::Mat ref) const
+	inline float getPairSimilarity(const cv::Mat& patch, const cv::Mat ref) const
 	{
 #ifdef DEBUG
 		assert(patch.size() == ref.size());
@@ -31,10 +31,6 @@ public:
 		return 0.5f * (res.at<float>(0) + 1);
 	}
 
-	inline bool acceptPatch(const cv::Mat& patch) const
-	{
-		return getRelativeSimilarity(patch) > NN_THRESHOLD;
-	}
 };
 
 #endif

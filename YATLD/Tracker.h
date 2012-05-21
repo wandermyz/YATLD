@@ -5,12 +5,17 @@
 #include "BoundingBox.h"
 #include <vector>
 #include <algorithm>
+#include "Detector.h"
 
 class Tracker
 {
 private:
+	Detector& detector;
+
 	cv::Mat prevFrame;	//deep copy
 	BoundingBox prevBoundingBox;
+	bool tracked;
+
 	std::vector<cv::Point2f> prevPoints;
 	std::vector<cv::Point2f> nextPoints;
 	std::vector<cv::Point2f> backwardPoints;
@@ -19,7 +24,7 @@ private:
 	std::vector<uchar> backwardStatus;
 	std::vector<float> backwardErrors;
 	std::vector<float> fbErrors;
-	std::vector<float> xOffsets, yOffsets, scales;
+	std::vector<float> xOffsets, yOffsets, sqScales, displacement, residual;
 	int nGoodPoints;	//good points will be moved to the first nGoodPoints elements in prevPoints and nextPoints
 
 	cv::Size lkWindowSize;
@@ -42,10 +47,20 @@ private:
 	}
 
 public:
-	Tracker();
+	Tracker(Detector& detector);
 
 	void init(const cv::Mat& frame, const BoundingBox& initBoundingBox);
 	void update(const cv::Mat& frame, cv::Mat& outputFrame);
+
+	inline const BoundingBox getBoundingBox() const
+	{
+		return prevBoundingBox;
+	}
+
+	inline bool isTracked() const
+	{
+		return tracked;
+	}
 };
 
 #endif

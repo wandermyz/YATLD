@@ -9,6 +9,9 @@ private:
 	float overlap;	//will be refreshed in Detector
 
 public:
+	float confidence;
+	bool positive;
+
 	BoundingBox() : overlap(0) { }
 	BoundingBox(const cv::Rect& rect) : cv::Rect(rect), overlap(0) { }
 	BoundingBox(int x, int y, int w, int h) : cv::Rect(x, y, w, h), overlap(0) { }

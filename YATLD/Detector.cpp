@@ -12,6 +12,7 @@ void Detector::init(const cv::Mat& frame, const BoundingBox& boundingBox, Mat& o
 {
 	this->frame = frame;
 	this->outputFrame = outputFrame;
+	this->finalBoundingBox = &boundingBox;
 
 	generateScanGrids(boundingBox);
 	patchVariance.init(frame, boundingBox);
@@ -26,14 +27,18 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 
 #ifdef DEBUG
 	int nPatches = 0, nEnsemblePatches = 0, nNNPatches = 0, nFinalPatches = 0;
-	float maxNNSimilarity = 0;
 #endif
+
+	float maxNNSimilarity = 0;
+	vector<BoundingBox>::const_iterator maxNNpatchIt;
+
 
 	patchVariance.update(frame);
 	ensembleClassifier.update(frame);
 
-	for (vector<BoundingBox>::const_iterator patchIt = scanGrids.begin(); patchIt != scanGrids.end(); ++patchIt)
+	for (vector<BoundingBox>::iterator patchIt = scanGrids.begin(); patchIt != scanGrids.end(); ++patchIt)
 	{
+		patchIt->positive = false;
 		//refersh overlap
 		//TODO
 
@@ -59,33 +64,30 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 		//NN classifier
 #ifdef DEBUG
 		nNNPatches++;
-		rectangle(outputFrame, *patchIt, Scalar(255,0,0), 1);
+		//rectangle(outputFrame, *patchIt, Scalar(255,0,0), 1);
 #endif
 
-#ifdef DEBUG
-		float sim = nnClassifier.getRelativeSimilarity(frame(*patchIt));
-		if (sim > maxNNSimilarity)
+		float relativeSim, conservativeSim;
+		nnClassifier.getSimilarity(frame(*patchIt), &relativeSim, &conservativeSim);
+		if (relativeSim > maxNNSimilarity)
 		{
-			maxNNSimilarity = sim;
+			maxNNSimilarity = relativeSim;
+			maxNNpatchIt = patchIt;
 		}
-		if (sim <= NN_THRESHOLD)
-		{
-			continue;
-		}
-#else
-		if (!nnClassifier.acceptPatch(frame(*patchIt))) 
+		if (relativeSim <= NN_THRESHOLD)
 		{
 			continue;
 		}
-#endif
 
 		//final
+		patchIt->positive = true;
+		patchIt->confidence = conservativeSim;
+
 #ifdef DEBUG
 		nFinalPatches++;
 #endif
 
-		rectangle(outputFrame, *patchIt, Scalar(255,0,0), 2);
-		
+		//rectangle(outputFrame, *patchIt, Scalar(255,0,0), 2);
 	}
 
 #ifdef DEBUG
@@ -95,7 +97,10 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 	cout << "After NN classifier: " << nFinalPatches << endl;
 	cout << "Maximum NN Similairty: " << maxNNSimilarity << endl;
 	cout << endl;
+	//rectangle(outputFrame, *maxNNpatchIt, Scalar(0, 0, 255), 2);
 #endif
+
+	finalBoundingBox = &(*maxNNpatchIt);
 }
 
 void Detector::generateScanGrids(const BoundingBox& initBoundingBox)

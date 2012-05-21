@@ -15,8 +15,8 @@ private:
 	cv::Mat outputFrame;
 	BoundingBox boundingBox;
 
-	Tracker tracker;
 	Detector detector;
+	Tracker tracker;
 	Trainer trainer;
 
 public:
