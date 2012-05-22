@@ -49,6 +49,14 @@ public:
 	{
 		return finalBoundingBox;
 	}
+
+	inline void refreshGridOverlap(const BoundingBox& ref)
+	{
+		for (std::vector<BoundingBox>::iterator it = scanGrids.begin(); it != scanGrids.end(); ++it)
+		{
+			it->refreshOverlap(ref);
+		}
+	}
 };
 
 #endif

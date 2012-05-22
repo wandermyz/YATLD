@@ -18,6 +18,10 @@ void Tracker::init(const Mat& frame, const BoundingBox& initBoundingBox)
 
 void Tracker::update(const Mat& frame, Mat& outputFrame)
 {
+#ifdef DEBUG
+	cout << "[Tracker]" << endl;
+#endif
+
 	tracked = false;
 	
 	//generate grid points
@@ -211,9 +215,8 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 
 		//find conservative similarity
 		Rect trimmed = prevBoundingBox & Rect(0, 0, frame.cols, frame.rows);
-		float relativeSim;
-		detector.getNNClassifier().getSimilarity(frame(trimmed), &relativeSim, &prevBoundingBox.confidence);
-		prevBoundingBox.positive = relativeSim > NN_THRESHOLD;
+		detector.getNNClassifier().getSimilarity(frame(trimmed), &prevBoundingBox.relativeSimilarity, &prevBoundingBox.conservativeSimilarity);
+		prevBoundingBox.state = (prevBoundingBox.relativeSimilarity > NN_THRESHOLD) ? TrackedAcceptedByNN : TrackedRejectedByNN;
 
 		//draw output
 		for (int i = 0; i < nGoodPoints; i++) 

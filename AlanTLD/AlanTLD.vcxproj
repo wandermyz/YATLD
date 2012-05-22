@@ -68,7 +68,7 @@
     <LibraryPath>C:\Program Files\OpenCV2.3.1\lib\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Program Files\OpenCV2.3.1\install\include;C:\Program Files\OpenCV2.3.1\install\include\opencv2;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Program Files\OpenCV2.3.1\install\include;C:\Program Files\OpenCV2.3.1\install\include\opencv2;$(ProjectDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LibraryPath>C:\Program Files\OpenCV2.3.1\lib\Release;$(LibraryPath)</LibraryPath>

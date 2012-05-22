@@ -66,7 +66,11 @@ int main(int argc, char* argv[])
 	tld.init(frame, boundingBox, outputFrame);
 	imshow("video", outputFrame);
 
+#ifdef DEBUG
+	while(waitKey() != 27)
+#else
 	while(waitKey(1) != 27)
+#endif
 	{	
 		cap >> rgbFrame;
 		outputFrame = rgbFrame.clone();

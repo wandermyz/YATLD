@@ -366,8 +366,8 @@ void TLD::bbPoints(vector<cv::Point2f>& points,const BoundingBox& bb){
   int max_pts=10;
   int margin_h=0;
   int margin_v=0;
-  int stepx = ceil((bb.width-2*margin_h)/max_pts);
-  int stepy = ceil((bb.height-2*margin_v)/max_pts);
+  int stepx = ceil((bb.width-2*margin_h)/(double)max_pts);
+  int stepy = ceil((bb.height-2*margin_v)/(double)max_pts);
   for (int y=bb.y+margin_v;y<bb.y+bb.height-margin_v;y+=stepy){
       for (int x=bb.x+margin_h;x<bb.x+bb.width-margin_h;x+=stepx){
           points.push_back(Point2f(x,y));
@@ -659,6 +659,7 @@ bool bbcomp(const BoundingBox& b1,const BoundingBox& b2){
 int TLD::clusterBB(const vector<BoundingBox>& dbb,vector<int>& indexes){
   //FIXME: Conditional jump or move depends on uninitialised value(s)
   const int c = dbb.size();
+
   //1. Build proximity matrix
   Mat D(c,c,CV_32F);
   float d;
@@ -670,9 +671,19 @@ int TLD::clusterBB(const vector<BoundingBox>& dbb,vector<int>& indexes){
       }
   }
   //2. Initialize disjoint clustering
- float L[c-1]; //Level
+ /*float L[c-1]; //Level
  int nodes[c-1][2];
- int belongs[c];
+ int belongs[c];*/
+
+  float* L = new float[c-1];
+  int** nodes = new int*[c-1];
+  for (int i = 0; i < c - 1; i++)
+  {
+	  nodes[i] = new int[2];
+  }
+  int* belongs = new int[c];
+  int res;
+
  int m=c;
  for (int i=0;i<c;i++){
     belongs[i]=i;
@@ -704,7 +715,9 @@ int TLD::clusterBB(const vector<BoundingBox>& dbb,vector<int>& indexes){
              if (visited)
                max_idx++;
          }
-         return max_idx;
+         //return max_idx;
+		 res = max_idx;
+		 break;
      }
 
  //4. Merge clusters and assign level
@@ -717,8 +730,18 @@ int TLD::clusterBB(const vector<BoundingBox>& dbb,vector<int>& indexes){
      }
      m++;
  }
- return 1;
 
+ res = 1;
+
+ delete [] L;
+ delete [] belongs;
+ for (int i = 0; i < c-1; i++)
+ {
+	 delete [] nodes[i];
+ }
+ delete [] nodes;
+
+ return res;
 }
 
 void TLD::clusterConf(const vector<BoundingBox>& dbb,const vector<float>& dconf,vector<BoundingBox>& cbb,vector<float>& cconf){

@@ -3,18 +3,36 @@
 
 #include <opencv.hpp>
 
+typedef enum
+{
+	UnknownState,
+	RejectedByVariance,
+	RejectedByEnsemble,
+	RejectedByNN,
+	DetectedAcceptedByNN,
+	TrackedRejectedByNN,
+	TrackedAcceptedByNN,
+} PatchState;
+
 class BoundingBox : public cv::Rect
 {
 private:
-	float overlap;	//will be refreshed in Detector
+	float overlap;	//will be refreshed in Detector::init()  !important: currently, detector won't refresh it in update()!!
 
 public:
-	float confidence;
-	bool positive;
+	float relativeSimilarity;
+	float conservativeSimilarity;
+	PatchState state;
 
-	BoundingBox() : overlap(0) { }
-	BoundingBox(const cv::Rect& rect) : cv::Rect(rect), overlap(0) { }
-	BoundingBox(int x, int y, int w, int h) : cv::Rect(x, y, w, h), overlap(0) { }
+#ifdef DEBUG
+	BoundingBox() : overlap(-1), relativeSimilarity(-1), conservativeSimilarity(-1) { }
+	BoundingBox(const cv::Rect& rect) : cv::Rect(rect), overlap(-1), relativeSimilarity(-1), conservativeSimilarity(-1) { }
+	BoundingBox(int x, int y, int w, int h) : cv::Rect(x, y, w, h), overlap(-1), relativeSimilarity(-1), conservativeSimilarity(-1) { }
+#else
+	BoundingBox() { }
+	BoundingBox(const cv::Rect& rect) : cv::Rect(rect) { }
+	BoundingBox(int x, int y, int w, int h) : cv::Rect(x, y, w, h) { }
+#endif
 
 	inline cv::Point tr() const { return cv::Point(x + width, y); }
 	inline cv::Point bl() const { return cv::Point(x, y + height); }
@@ -30,6 +48,9 @@ public:
 
 	inline float getOverlap() const
 	{
+#ifdef DEBUG
+		assert(overlap >= 0);
+#endif
 		return overlap;
 	}
 
@@ -37,15 +58,29 @@ public:
 	{
 		return (x + width >= ref.x) && (x <= ref.x + ref.width) && (y + height >= ref.y) && (y <= ref.y + ref.height);
 	}
+
+	inline bool isPositive() const
+	{
+		return state == DetectedAcceptedByNN || state == TrackedAcceptedByNN || state == TrackedRejectedByNN;
+	}
+
+#ifdef DEBUG
+	inline void clearOverlap()
+	{
+		overlap = -1;
+	}
+#endif
 };
 
+/*
 class CompareOverlap
 {
 public:
 	inline bool operator() (const BoundingBox* bb1, const BoundingBox* bb2)
 	{
-		return bb1->getOverlap() < bb2->getOverlap();
+		return bb1->getOverlap() < bb2->getOverlap();	
 	}
 };
+*/
 
 #endif

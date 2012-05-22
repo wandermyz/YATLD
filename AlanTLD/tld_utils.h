@@ -1,7 +1,7 @@
 #include <opencv2/opencv.hpp>
 #pragma once
 
-
+#define round(x) (int)((x) + 0.5)
 
 void drawBox(cv::Mat& image, CvRect box, cv::Scalar color = cvScalarAll(255), int thick=1); 
 

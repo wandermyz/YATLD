@@ -22,74 +22,121 @@ void Detector::init(const cv::Mat& frame, const BoundingBox& boundingBox, Mat& o
 
 void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 {
+#ifdef DEBUG
+	cout << "[Detector]" << endl;
+#endif
+
 	this->frame = frame;
 	this->outputFrame = outputFrame;
 
 #ifdef DEBUG
+	for (std::vector<BoundingBox>::iterator it = scanGrids.begin(); it != scanGrids.end(); ++it)
+	{
+		it->clearOverlap();
+	}
 	int nPatches = 0, nEnsemblePatches = 0, nNNPatches = 0, nFinalPatches = 0;
 #endif
 
 	float maxNNSimilarity = 0;
 	vector<BoundingBox>::const_iterator maxNNpatchIt;
 
-
 	patchVariance.update(frame);
 	ensembleClassifier.update(frame);
 
+#ifdef MEASURE_TIME
+	double totalTime = 0;
+	double varianceTotalTime = 0;
+	double ensembleTotalTime = 0;
+	double nnTotalTime = 0;
+#endif
+
 	for (vector<BoundingBox>::iterator patchIt = scanGrids.begin(); patchIt != scanGrids.end(); ++patchIt)
 	{
-		patchIt->positive = false;
-		//refersh overlap
-		//TODO
-
-#ifdef DEBUG
-		nPatches++;
-		//rectangle(outputFrame, patch, Scalar(255,255,255));
-#endif
-		if (!patchVariance.acceptPatch(*patchIt))
-		{
-			continue;
-		}
-
-		//Ensemble classifier
-#ifdef DEBUG
-		nEnsemblePatches++;
-		//rectangle(outputFrame, patch, Scalar(255,0,0), 2);
-#endif
-		if (!ensembleClassifier.acceptPatch(*patchIt))
-		{
-			continue;
-		}
-
-		//NN classifier
-#ifdef DEBUG
-		nNNPatches++;
-		//rectangle(outputFrame, *patchIt, Scalar(255,0,0), 1);
+#ifdef MEASURE_TIME
+		double time = 0, varianceTime = 0, ensembleTime = 0, nnTime = 0;
 #endif
 
-		float relativeSim, conservativeSim;
-		nnClassifier.getSimilarity(frame(*patchIt), &relativeSim, &conservativeSim);
-		if (relativeSim > maxNNSimilarity)
+		do
 		{
-			maxNNSimilarity = relativeSim;
-			maxNNpatchIt = patchIt;
-		}
+#ifdef MEASURE_TIME
+			time = getTickCount();
+#endif
 
-		if (relativeSim <= NN_THRESHOLD)
-		{
-			continue;
-		}
-
-		//final
-		patchIt->positive = true;
-		patchIt->confidence = conservativeSim;
+			patchIt->state = UnknownState;
 
 #ifdef DEBUG
-		nFinalPatches++;
+			nPatches++;
+			//rectangle(outputFrame, patch, Scalar(255,255,255));
+#endif
+
+#ifdef MEASURE_TIME
+			varianceTime = getTickCount();
+#endif
+			if (!patchVariance.acceptPatch(*patchIt))
+			{
+				patchIt->state = RejectedByVariance;
+				break;
+			}
+
+			//Ensemble classifier
+#ifdef DEBUG
+			nEnsemblePatches++;
+			//rectangle(outputFrame, patch, Scalar(255,0,0), 2);
+#endif
+
+#ifdef MEASURE_TIME
+			ensembleTime = getTickCount();
+#endif
+			if (!ensembleClassifier.acceptPatch(*patchIt))
+			{
+				patchIt->state = RejectedByEnsemble;
+				break;
+			}
+
+			//NN classifier
+#ifdef DEBUG
+			nNNPatches++;
+			//rectangle(outputFrame, *patchIt, Scalar(255,0,0), 1);
+#endif
+
+#ifdef MEASURE_TIME
+			nnTime = getTickCount();
+#endif
+			nnClassifier.getSimilarity(frame(*patchIt), &patchIt->relativeSimilarity, &patchIt->conservativeSimilarity);
+			if (patchIt->relativeSimilarity > maxNNSimilarity)
+			{
+				maxNNSimilarity = patchIt->relativeSimilarity;
+				maxNNpatchIt = patchIt;
+			}
+
+			if (patchIt->relativeSimilarity <= NN_THRESHOLD)
+			{
+				patchIt->state = RejectedByNN;
+				break;
+			}	
+
+			//final
+			patchIt->state = DetectedAcceptedByNN;
+
+#ifdef DEBUG
+			nFinalPatches++;
+#endif
+		} while (false);
+
+#ifdef MEASURE_TIME
+		double endTime = getTickCount();
+		varianceTotalTime += ((ensembleTime == 0 ? endTime : ensembleTime) - varianceTime) / getTickFrequency();
+		ensembleTotalTime += (ensembleTime == 0 ? 0 : ((nnTime == 0 ? endTime : nnTime) - ensembleTime)) / getTickFrequency();
+		nnTotalTime += (nnTime == 0 ? 0 : (endTime - varianceTime)) / getTickFrequency();
+		totalTime += ((double)getTickCount() - time) / getTickFrequency();
 #endif
 
 		//rectangle(outputFrame, *patchIt, Scalar(255,0,0), 2);
 	}
+
+#ifdef MEASURE_TIME
+	printf("Detector Time: %f, %f, %f, %f\n", varianceTotalTime, ensembleTotalTime, nnTotalTime, totalTime);
+#endif
 
 #ifdef DEBUG
 	cout << "Total patches: " << nPatches << endl;
@@ -97,7 +144,7 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 	cout << "After Ensemble classifier: " << nNNPatches << endl;
 	cout << "After NN classifier: " << nFinalPatches << endl;
 	cout << "Maximum NN Similairty: " << maxNNSimilarity << endl;
-	cout << endl;
+	//cout << endl;
 	//rectangle(outputFrame, *maxNNpatchIt, Scalar(0, 0, 255), 2);
 #endif
 
