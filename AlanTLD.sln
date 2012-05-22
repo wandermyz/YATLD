@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AlanTLD", "AlanTLD\AlanTLD.vcxproj", "{22FB2E93-4A89-478E-9CCA-C576167E0DAA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Debug|Win32.Build.0 = Debug|Win32
+		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Debug|x64.ActiveCfg = Debug|x64
+		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Debug|x64.Build.0 = Debug|x64
+		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Release|Win32.ActiveCfg = Release|Win32
+		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Release|Win32.Build.0 = Release|Win32
+		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Release|x64.ActiveCfg = Release|x64
+		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

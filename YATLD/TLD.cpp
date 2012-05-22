@@ -30,7 +30,8 @@ void TLD::update(const Mat& frame, Mat& outputFrame)
 	detector.update(frame, outputFrame);
 	tracker.update(frame, outputFrame);	
 	
-	float detectorConf = -1, trackerConf = -1;
+	float detectorConf = -1;
+	float trackerConf = -1;
 	if (detector.getBoundingBox() != NULL)
 	{
 		rectangle(this->outputFrame, *detector.getBoundingBox(), Scalar(0, 0, 255), 1);	//red

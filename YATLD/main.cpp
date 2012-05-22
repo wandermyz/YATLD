@@ -59,6 +59,7 @@ int main(int argc, char* argv[])
 	
 	Mat rgbFrame, frame, outputFrame;
 
+	cout << "Frame 1" << endl;
 	cap >> rgbFrame;
 	outputFrame = rgbFrame.clone();
 	cvtColor(rgbFrame, frame, CV_RGB2GRAY);
@@ -66,12 +67,14 @@ int main(int argc, char* argv[])
 	tld.init(frame, boundingBox, outputFrame);
 	imshow("video", outputFrame);
 
+	int frameCount = 2;
 #ifdef DEBUG
 	while(waitKey() != 27)
 #else
 	while(waitKey(1) != 27)
 #endif
 	{	
+		cout << "Frame " << frameCount << endl;
 		cap >> rgbFrame;
 		outputFrame = rgbFrame.clone();
 		cvtColor(rgbFrame, frame, CV_RGB2GRAY);
@@ -80,6 +83,13 @@ int main(int argc, char* argv[])
 
 		boundingBox = tld.getBoundingBox();
 		imshow("video", outputFrame);
+
+		frameCount++;
+
+		if (frameCount == cap.get(CV_CAP_PROP_FRAME_COUNT))
+		{
+			break;
+		}
 	}
 
 

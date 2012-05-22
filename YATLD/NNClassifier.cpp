@@ -1,12 +1,12 @@
 #include "NNClassifier.h"
-#include <omp.h>
+//#include <omp.h>
 using namespace cv;
 using namespace std;
 
 
 NNClassifier::NNClassifier()
 {
-	omp_set_num_threads(8);
+	//omp_set_num_threads(8);
 }
 
 void NNClassifier::train(const cv::Mat& patchImg, bool isPositive)
@@ -33,7 +33,7 @@ void NNClassifier::getSimilarity(const cv::Mat& patchImg, float* relative, float
 	resize(patchImg, normPatch, Size(NORMALIZED_PATCH_SIZE, NORMALIZED_PATCH_SIZE));
 
 	float maxPos = 0;
-	float maxHalfPos;
+	float maxHalfPos = 0;
 	float maxNeg = 0;
 
 	int posNum = positiveSamples.size();
@@ -47,7 +47,7 @@ void NNClassifier::getSimilarity(const cv::Mat& patchImg, float* relative, float
 	float* neg = new float[negNum];
 
 	//double t = (double)getTickCount();
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (int i = 0; i < posNum; i++)
 	{
 		pos[i] = getPairSimilarity(normPatch, positiveSamples[i]);
@@ -59,7 +59,7 @@ void NNClassifier::getSimilarity(const cv::Mat& patchImg, float* relative, float
 	//t = ((double)getTickCount() - t)/getTickFrequency();
 	//cout << t << endl;
 
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (int i = 0; i < negNum; i++)
 	{
 		neg[i] = getPairSimilarity(normPatch, negativeSamples[i]);

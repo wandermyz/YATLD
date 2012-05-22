@@ -25,7 +25,7 @@ private:
 	std::vector<float> backwardErrors;
 	std::vector<float> ncc;
 	std::vector<float> fbErrors;
-	std::vector<float> xOffsets, yOffsets, sqScales, displacement, residual;
+	std::vector<float> xOffsets, yOffsets, scales, displacement, residual;
 	int nGoodPoints;	//good points will be moved to the first nGoodPoints elements in prevPoints and nextPoints
 
 	cv::Size lkWindowSize;

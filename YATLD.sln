@@ -3,14 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "YATLD", "YATLD\YATLD.vcxproj", "{436BE11E-6C77-40D9-851C-675F5A759E3B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AlanTLD", "AlanTLD\AlanTLD.vcxproj", "{22FB2E93-4A89-478E-9CCA-C576167E0DAA}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CA041340-22CD-4399-BAA2-96EBC1334B98}"
-	ProjectSection(SolutionItems) = preProject
-		Performance1.psess = Performance1.psess
-		Performance2.psess = Performance2.psess
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -27,14 +19,6 @@ Global
 		{436BE11E-6C77-40D9-851C-675F5A759E3B}.Release|Win32.Build.0 = Release|Win32
 		{436BE11E-6C77-40D9-851C-675F5A759E3B}.Release|x64.ActiveCfg = Release|x64
 		{436BE11E-6C77-40D9-851C-675F5A759E3B}.Release|x64.Build.0 = Release|x64
-		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Debug|Win32.ActiveCfg = Debug|Win32
-		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Debug|Win32.Build.0 = Debug|Win32
-		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Debug|x64.ActiveCfg = Debug|x64
-		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Debug|x64.Build.0 = Debug|x64
-		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Release|Win32.ActiveCfg = Release|Win32
-		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Release|Win32.Build.0 = Release|Win32
-		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Release|x64.ActiveCfg = Release|x64
-		{22FB2E93-4A89-478E-9CCA-C576167E0DAA}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

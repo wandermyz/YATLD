@@ -28,8 +28,8 @@ private:
 
 	void combine();
 	void generatePatches();
-	int learnByPExpert(const cv::Mat& frame, bool init);
-	int learnByNExpert(const cv::Mat& frame, bool init);
+	void learnByPExpert(const cv::Mat& frame, bool init);
+	void learnByNExpert(const cv::Mat& frame, bool init);
 	static bool compareOverlap(const BoundingBox* bb1, const BoundingBox* bb2);
 
 public:
