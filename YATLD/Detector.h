@@ -57,6 +57,11 @@ public:
 			it->refreshOverlap(ref);
 		}
 	}
+
+	inline const PatchVariance& getPatchVariance() const
+	{
+		return patchVariance;
+	}
 };
 
 #endif

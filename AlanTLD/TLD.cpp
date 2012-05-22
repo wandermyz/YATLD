@@ -46,8 +46,8 @@ void TLD::read(const FileNode& file){
 void TLD::init(const Mat& frame1,const Rect& box,FILE* bb_file){
   //bb_file = fopen("bounding_boxes.txt","w");
   //Get Bounding Boxes
-    buildGrid(frame1,box);
-    printf("Created %d bounding boxes\n",(int)grid.size());
+  buildGrid(frame1,box);
+  printf("Created %d bounding boxes\n",(int)grid.size());
   ///Preparation
   //allocation
   iisum.create(frame1.rows+1,frame1.cols+1,CV_32F);

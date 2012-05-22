@@ -184,16 +184,18 @@ void Detector::generateScanGrids(const BoundingBox& initBoundingBox)
 		patch.height = scaleIt->height;
 
 		int minSide = min(scaleIt->width, scaleIt->height);
-		int stepH = (int)(STEP_H * scaleIt->width + 0.5);
-		int stepV = (int)(STEP_V * scaleIt->height + 0.5);
+		//int stepH = (int)(STEP_H * scaleIt->width + 0.5);
+		//int stepV = (int)(STEP_V * scaleIt->height + 0.5);
+		int stepH = (int)(STEP_H * minSide + 0.5);
+		int stepV = (int)(STEP_V * minSide + 0.5);
 
 #ifdef DEBUG
 		assert(stepH >= 1 && stepV >= 1);
 #endif
 
-		for (patch.y = 0; patch.br().y <= frame.rows; patch.y += stepV)
+		for (patch.y = 0; patch.br().y < frame.rows; patch.y += stepV)
 		{
-			for (patch.x = 0; patch.br().x <= frame.cols; patch.x += stepH)
+			for (patch.x = 0; patch.br().x < frame.cols; patch.x += stepH)
 			{
 				patch.refreshOverlap(initBoundingBox);
 				scanGrids.push_back(patch);

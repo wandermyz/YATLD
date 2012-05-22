@@ -11,7 +11,7 @@ private:
 	cv::Mat sqIntegralImg;	
 	double initVariance;
 
-	double computeVariance(const BoundingBox& patch);
+	double computeVariance(const BoundingBox& patch) const;
 
 public:
 	void init(const cv::Mat& frame, const BoundingBox& initBoundingBox);
@@ -21,9 +21,9 @@ public:
 		integral(frame, integralImg, sqIntegralImg, CV_64F);
 	}
 
-	inline bool acceptPatch(const BoundingBox patch)
+	inline bool acceptPatch(const BoundingBox& patch, double ratio = 0.5) const
 	{
-		return computeVariance(patch) > 0.5 * initVariance;
+		return computeVariance(patch) > ratio * initVariance;
 	}
 };
 

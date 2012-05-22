@@ -10,7 +10,7 @@ void PatchVariance::init(const Mat& frame, const BoundingBox& initBoundingBox)
 	initVariance = computeVariance(initBoundingBox);
 }
 
-double PatchVariance::computeVariance(const BoundingBox& patch)
+double PatchVariance::computeVariance(const BoundingBox& patch) const 
 {
 	double sum = integralImg.at<double>(patch.br()) 
 				- integralImg.at<double>(patch.br().y, patch.x) 

@@ -140,7 +140,9 @@ void Trainer::generatePatches()
 		{
 			positivePatches.push_back(&(*patchIt));
 		}
-		else if (patchIt->getOverlap() < PN_NEGATIVE_OVERLAP && (float)patchIt->width / (float)result->width >= PN_NEGATIVE_MIN_SCALE)
+		//else if (patchIt->getOverlap() < PN_NEGATIVE_OVERLAP && patchIt->state != RejectedByVariance)
+		else if (patchIt->getOverlap() < PN_NEGATIVE_OVERLAP && detector.getPatchVariance().acceptPatch(*patchIt, 0.25))	//TODO: why?
+		//else if (patchIt->getOverlap() < PN_NEGATIVE_OVERLAP)
 		{
 			negativePatches.push_back(&(*patchIt));
 		}
@@ -168,32 +170,12 @@ void Trainer::learnByPExpert(const Mat& frame, bool init)
 		nnCount++;
 	}
 
-	//synthesize positive patches
 	int positiveCount = 0;
-	//sort(positivePatches.begin(), positivePatches.end(), compareOverlap);
 	nth_element(positivePatches.begin(), positivePatches.begin() + positiveNum, positivePatches.end(), compareOverlap);
 
 	for (int i = 0; i < positiveNum && !positivePatches.empty(); ++i)
 	{
-		//const BoundingBox& patch = *(positivePatches[positivePatches.size() - 1]);
-		//positivePatches.pop_back();
 		const BoundingBox& patch = *positivePatches[i];
-
-		/*cout << patch.getOverlap() << endl;
-		Mat tmp = frame.clone();
-		rectangle(tmp, *result, Scalar(0,255,255), 2);
-		rectangle(tmp, patch, Scalar(255,0,0), 1);
-		imshow("init", tmp);
-		waitKey();*/
-
-
-		//all patches are from grid
-		/*Cases for learning:
-			1. rejected by NN
-			or 2. margin too small
-			or 3. rejected by Essemble
-			3 implies 1
-		*/
 
 #ifdef DEBUG
 		assert(patch.state != TrackedAcceptedByNN && patch.state != TrackedRejectedByNN && patch.state != UnknownState);
@@ -204,39 +186,14 @@ void Trainer::learnByPExpert(const Mat& frame, bool init)
 		}
 
 		bool trainEnsemble;
-		//bool trainNN;
 
 		if (init)
 		{
 			trainEnsemble = true;
-			//trainNN = true;
 		}
 		else
 		{
 			trainEnsemble = patch.state == RejectedByEnsemble;
-			/*if (trainEnsemble)
-			{
-				//Will NN also be trained?
-				float relativeSim;
-				detector.getNNClassifier().getSimilarity(frame(patch), &relativeSim, NULL);
-				trainNN = relativeSim - NN_THRESHOLD <= TRAINER_MARGIN_THRESHOLD; 
-#ifdef DEBUG
-				if (trainNN)
-				{
-					cout << "Warning: Rejected by Ensemble but NN is trained! Relative Similarity = " << relativeSim << endl;
-				}
-#endif
-			}
-			else
-			{
-				trainNN = patch.relativeSimilarity - NN_THRESHOLD <= TRAINER_MARGIN_THRESHOLD;
-#ifdef DEBUG
-				if (trainNN)
-				{
-					cout << "NN is trained. Relative Similarity = " << patch.relativeSimilarity << endl;
-				}
-#endif
-			}*/
 		}
 
 		if (trainEnsemble)
@@ -274,21 +231,9 @@ void Trainer::learnByPExpert(const Mat& frame, bool init)
 					detector.getEnsembleClassifier().train(Rect(0, 0, warpedImg.cols, warpedImg.rows), true);
 				}
 
-				/*if (trainNN)
-				{
-					detector.getNNClassifier().train(warpedImg, true);
-				}*/
-
 				ensembleCount++;
 			}
-
-			//positiveCount++;
 		}	//if(trainEnsemble)
-
-		/*if (trainNN)
-		{
-			detector.getNNClassifier().train(frame(patch), true);
-		}*/
 	}
 
 	cout << "Positive: " << "Ensemble " << ensembleCount << ", NN " << nnCount << endl;
@@ -310,7 +255,7 @@ void Trainer::learnByNExpert(const Mat& frame, bool init)
  	random_shuffle(negativePatches.begin(), negativePatches.end());		
 	detector.getEnsembleClassifier().update(frame);
 
-	for (int i = 0; i < negativePatches.size() && nnCount < negativeNum; i++)
+	for (int i = 0; i < negativePatches.size(); i++)
 	{
 		const BoundingBox& patch = *negativePatches[i]; 
 
@@ -341,7 +286,7 @@ void Trainer::learnByNExpert(const Mat& frame, bool init)
 			ensembleCount++;
 		}
 
-		if (trainNN)
+		if (i < negativeNum && trainNN)
 		{
 			detector.getNNClassifier().train(frame(patch), false);
 			nnCount++;
