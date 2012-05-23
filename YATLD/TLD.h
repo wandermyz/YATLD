@@ -13,7 +13,7 @@ class TLD
 private:
 	cv::Mat frame;
 	cv::Mat outputFrame;
-	BoundingBox boundingBox;
+	//BoundingBox boundingBox;
 
 	Detector detector;
 	Tracker tracker;
@@ -25,9 +25,9 @@ public:
 	void init(const cv::Mat& frame, const BoundingBox& boundingBox, cv::Mat& outputFrame);
 	void update(const cv::Mat& frame, cv::Mat& outputFrame);
 
-	inline BoundingBox getBoundingBox() const
+	inline const BoundingBox* getBoundingBox() const
 	{
-		return boundingBox;
+		return trainer.getResult(); 
 	}
 };
 

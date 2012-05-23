@@ -277,6 +277,22 @@ void Trainer::trainNN(const Mat& frame, bool init)
 	}
 
 	cout << "Train NN: Positive " << posCount << ", Negative " << negCount << endl;
+
+	if (detector.getNNClassifier().getPositiveNum() > NN_MAX_POSITIVE)
+	{
+		detector.getNNClassifier().forgetPositive(detector.getNNClassifier().getPositiveNum() - NN_MIN_POSITIVE);
+#ifdef DEBUG
+		cout << "NN forgets " << detector.getNNClassifier().getPositiveNum() - NN_MIN_POSITIVE << " positive samples" << endl;
+#endif
+	}
+
+	if (detector.getNNClassifier().getNegativeNum() > NN_MAX_NEGATIVE)
+	{
+		detector.getNNClassifier().forgetNegative(detector.getNNClassifier().getNegativeNum() - NN_MIN_NEGATIVE);
+#ifdef DEBUG
+		cout << "NN forgets " << detector.getNNClassifier().getNegativeNum() - NN_MIN_NEGATIVE << " negative samples" << endl;
+#endif
+	}
 }
 
 //void Trainer::learnByPExpert(const Mat& frame, bool init)

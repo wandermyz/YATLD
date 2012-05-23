@@ -134,6 +134,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BoundingBox.cpp" />
     <ClCompile Include="Detector.cpp" />
     <ClCompile Include="EnsembleClassifier.cpp" />
     <ClCompile Include="NNClassifier.cpp" />

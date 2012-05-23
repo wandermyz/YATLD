@@ -2,6 +2,7 @@
 #define YATLD_BOUNDING_BOX_H
 
 #include <opencv.hpp>
+#include <iostream>
 
 typedef enum
 {
@@ -85,5 +86,7 @@ public:
 	}
 };
 */
+
+std::ostream& operator<<(std::ostream& os, const BoundingBox& boundingBox);
 
 #endif

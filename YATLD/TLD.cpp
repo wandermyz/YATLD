@@ -9,7 +9,6 @@ TLD::TLD() : tracker(detector), trainer(detector, tracker)
 void TLD::init(const Mat& frame, const BoundingBox& boundingBox, Mat& outputFrame)
 {
 	this->frame = frame;
-	this->boundingBox = boundingBox;
 	this->outputFrame = outputFrame;
 
 	detector.init(frame, boundingBox, outputFrame);

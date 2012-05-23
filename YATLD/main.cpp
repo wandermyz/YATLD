@@ -29,16 +29,19 @@ int main(int argc, char* argv[])
 {
 	TLD tld;
 
-	string videoPath, initPath;
-	if (argc == 4 && string(argv[1]) == "-s")
+	string videoPath, initPath, outputPath;
+	if (argc == 4)
 	{
-		videoPath = string("..\\..\\datasets\\") + argv[2] + "_" + argv[3] + "\\" + argv[3] + ".mpg";
-		initPath = string("..\\..\\datasets\\") + argv[2] + "_" + argv[3] + "\\" + "init.txt";
+		string dir = string(argv[1]) + "\\";
+		videoPath = dir + argv[2] + "_" + argv[3] + "\\" + argv[3] + ".mpg";
+		initPath = dir + argv[2] + "_" + argv[3] + "\\" + "init.txt";
+		outputPath = dir + argv[2] + "_" + argv[3] + "\\" + "YATLD.txt";
 	}
 	else if (argc == 3)
 	{
 		videoPath = argv[1];
 		initPath = argv[2];
+		outputPath = ".\\YATLD.txt";
 	}
 	else
 	{
@@ -53,13 +56,23 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	ofstream fout(outputPath);
+
+	if (!fout)
+	{
+		cerr << "Cannot create file: " << outputPath << endl;
+		return -1;
+	}
+
 	BoundingBox boundingBox = readBoundingBox(initPath);
+	fout << boundingBox << endl;
 
 	namedWindow("video", 1);
 	
 	Mat rgbFrame, frame, outputFrame;
-
-	cout << "Frame 1" << endl;
+	
+	int frameCount = 1;
+	cout << "Frame " << frameCount << endl;
 	cap >> rgbFrame;
 	outputFrame = rgbFrame.clone();
 	cvtColor(rgbFrame, frame, CV_RGB2GRAY);
@@ -67,31 +80,38 @@ int main(int argc, char* argv[])
 	tld.init(frame, boundingBox, outputFrame);
 	imshow("video", outputFrame);
 
-	int frameCount = 2;
-#ifdef DEBUG
+	int nFrames = cap.get(CV_CAP_PROP_FRAME_COUNT);
+
+#ifdef DEBUG_XXXX
 	while(waitKey() != 27)
 #else
 	while(waitKey(1) != 27)
 #endif
 	{	
+		frameCount++;
 		cout << "Frame " << frameCount << endl;
 		cap >> rgbFrame;
 		outputFrame = rgbFrame.clone();
 		cvtColor(rgbFrame, frame, CV_RGB2GRAY);
 
 		tld.update(frame, outputFrame);
-
-		boundingBox = tld.getBoundingBox();
 		imshow("video", outputFrame);
 
-		frameCount++;
+		if (tld.getBoundingBox() != NULL)
+		{
+			fout << *tld.getBoundingBox() << endl;
+		}
+		else
+		{
+			fout << "NaN,NaN,NaN,NaN" << endl;
+		}
 
 		if (frameCount == cap.get(CV_CAP_PROP_FRAME_COUNT))
 		{
 			break;
 		}
 	}
-
+	fout.close();
 
 	return 0;
 }

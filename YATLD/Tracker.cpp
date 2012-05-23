@@ -185,6 +185,11 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 
 		//find conservative similarity
 		Rect trimmed = prevBoundingBox & Rect(0, 0, frame.cols, frame.rows);
+
+		if (trimmed.area() == 0)
+		{
+			break;
+		}
 		detector.getNNClassifier().getSimilarity(frame(trimmed), &prevBoundingBox.relativeSimilarity, &prevBoundingBox.conservativeSimilarity);
 		prevBoundingBox.state = (prevBoundingBox.relativeSimilarity > NN_THRESHOLD) ? TrackedAcceptedByNN : TrackedRejectedByNN;
 
