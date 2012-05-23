@@ -13,7 +13,7 @@ EnsembleClassifier::~EnsembleClassifier()
 	comparators = NULL;
 }
 
-void EnsembleClassifier::init()
+void EnsembleClassifier::init(const Mat& frame)
 {
 	RNG rng;
 
@@ -22,24 +22,28 @@ void EnsembleClassifier::init()
 	{
 		comparators[i].init(rng);
 	}
+
+	this->frame = frame;
+	GaussianBlur(frame, frameBlurred, cv::Size(0, 0), FERN_GAUSSIAN_SIGMA);
 }
 
-void EnsembleClassifier::train(const BoundingBox& patch, bool isPositive)
+void EnsembleClassifier::train(const Mat& patchImg, bool isPositive)
 {
 	for (int i = 0; i < NUM_FERNS; i++)
 	{
-		comparators[i].train(frameBlurred(patch), isPositive);
+		comparators[i].train(patchImg, isPositive);
 	}
 }
 
-bool EnsembleClassifier::acceptPatch(const BoundingBox& patch) const
+float EnsembleClassifier::getPosterior(const Mat& patchImg) const
 {
 	double posterior = 0;
 	for (int i = 0; i < NUM_FERNS; i++)
 	{
-		posterior += comparators[i].getPosterior(frameBlurred(patch));
+		posterior += comparators[i].getPosterior(patchImg);
 	}
 
 	//printf("%f\n", posterior / NUM_FERNS);
-	return posterior / NUM_FERNS >= 0.5;
+	return (float)(posterior / NUM_FERNS);
 }
+

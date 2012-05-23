@@ -237,8 +237,7 @@ void TLD::processFrame(const cv::Mat& img1,const cv::Mat& img2,vector<Point2f>& 
       tracked = false;
   }
   ///Detect
-  //detect(img2);
-  detected = false;
+  detect(img2);
 
   ///Integration
   if (tracked){

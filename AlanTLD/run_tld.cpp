@@ -159,7 +159,9 @@ GETBOUNDINGBOX:
   //TLD initialization
   tld.init(last_gray,box,bb_file);
   printf("Initialized. \n\n");
+#ifdef DEBUG
   cvWaitKey();
+#endif
 
   ///Run-time
   Mat current_gray;
@@ -191,8 +193,14 @@ REPEAT:
     frames++;
     printf("Detection rate: %d/%d\n",detections,frames);
 	printf("\n");
-    if (cvWaitKey(/*33*/) == 'q')
+
+#ifdef DEBUG
+    if (cvWaitKey(/*33*/) == 27)
       break;
+#else
+	if (cvWaitKey(33) == 27)
+      break;
+#endif
   }
   if (rep){
     rep = false;

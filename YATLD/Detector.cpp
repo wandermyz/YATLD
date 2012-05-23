@@ -17,7 +17,7 @@ void Detector::init(const cv::Mat& frame, const BoundingBox& boundingBox, Mat& o
 	generateScanGrids(boundingBox);
 	patchVariance.init(frame, boundingBox);
 
-	ensembleClassifier.init();
+	ensembleClassifier.init(frame);
 }
 
 void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
@@ -32,7 +32,7 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 #ifdef DEBUG
 	for (std::vector<BoundingBox>::iterator it = scanGrids.begin(); it != scanGrids.end(); ++it)
 	{
-		it->clearOverlap();
+		it->resetStates();
 	}
 	int nPatches = 0, nEnsemblePatches = 0, nNNPatches = 0, nFinalPatches = 0;
 #endif

@@ -65,9 +65,12 @@ public:
 	}
 
 #ifdef DEBUG
-	inline void clearOverlap()
+	inline void resetStates()
 	{
 		overlap = -1;
+		relativeSimilarity = -1;
+		conservativeSimilarity = -1;
+		state = UnknownState;
 	}
 #endif
 };

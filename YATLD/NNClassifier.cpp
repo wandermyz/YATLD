@@ -72,7 +72,7 @@ void NNClassifier::getSimilarity(const cv::Mat& patchImg, float* relative, float
 			maxPos = pos[i];
 		}
 
-		if (i == positiveSamples.size() / 2 - 1)
+		if (i == positiveSamples.size() / 2)
 		{
 			maxHalfPos = maxPos;
 		}
@@ -86,45 +86,20 @@ void NNClassifier::getSimilarity(const cv::Mat& patchImg, float* relative, float
 		}
 	}
 
-	/*
-	for (int i = 0; i < positiveSamples.size(); i++)
-	{
-		float pos = getPairSimilarity(normPatch, positiveSamples[i]);
-		if (pos > maxPos)
-		{
-			maxPos = pos;
-		}
-		if (i == positiveSamples.size() / 2)
-		{
-			maxHalfPos = maxPos;
-			if (relative == NULL)
-			{
-				break;
-			}
-		}
-	}
-
-	for (vector<Mat>::const_iterator it = negativeSamples.begin(); it != negativeSamples.end(); ++it)
-	{
-		float neg = getPairSimilarity(normPatch, *it);
-		if (neg > maxNeg)
-		{
-			maxNeg = neg;
-		}
-	}*/
-
 #ifdef DEBUG
 	assert(maxPos + maxNeg > 0);
 #endif
 
 	if (relative != NULL)
 	{
-		*relative = maxPos / (maxPos + maxNeg);
+		//*relative = maxPos / (maxPos + maxNeg);
+		*relative = (1 - maxNeg) / (2 - maxPos - maxNeg);		//?
 	}
 
 	if (conservative != NULL)
 	{
-		*conservative = maxHalfPos / (maxHalfPos + maxNeg);
+		//*conservative = maxHalfPos / (maxHalfPos + maxNeg);
+		*conservative = (1 - maxNeg) / (2 - maxHalfPos - maxNeg);	//?
 	}
 
 	delete [] pos;
