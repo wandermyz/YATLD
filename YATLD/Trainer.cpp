@@ -269,7 +269,7 @@ void Trainer::trainNN(const Mat& frame, bool init)
 			detector.getNNClassifier().getSimilarity(frame(patch), &relativeSimilarity, NULL);
 		}
 
-		if (relativeSimilarity > 0.5)	//TODO: threshold?
+		if (relativeSimilarity > 0.55 /*0.5*/)	//TODO: threshold?
 		{
 			detector.getNNClassifier().train(frame(patch), false);
 			negCount++;

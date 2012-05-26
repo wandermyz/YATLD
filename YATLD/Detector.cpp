@@ -117,6 +117,7 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 
 			//final
 			patchIt->state = DetectedAcceptedByNN;
+			rectangle(outputFrame, *patchIt, Scalar(255,0,0), 1);
 
 #ifdef DEBUG
 			nFinalPatches++;

@@ -70,7 +70,7 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 		{
 			if (status[i] == 1)
 			{
-				getRectSubPix( prevFrame, Size(TRACKER_GRID_PATCH_SIZE,TRACKER_GRID_PATCH_SIZE), prevPoints[i], prevSub);
+				getRectSubPix( prevFrame, Size(TRACKER_GRID_PATCH_SIZE,TRACKER_GRID_PATCH_SIZE), prevPoints[i], prevSub);                
 				getRectSubPix( frame, Size(TRACKER_GRID_PATCH_SIZE,TRACKER_GRID_PATCH_SIZE), nextPoints[i], nextSub);
 				matchTemplate( prevSub, nextSub, res, CV_TM_CCOEFF_NORMED);
 				ncc.push_back(res.at<float>(0));
