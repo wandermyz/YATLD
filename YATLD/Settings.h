@@ -14,11 +14,13 @@
 #define INIT_ROTATION_CHANGE 10.0f //* CV_PI / 180.0
 #define INIT_SYNTHESIS_NUM 20
 #define INIT_POSITIVE_NUM 10
-#define INIT_NEGATIVE_NUM 100	//?
+#define INIT_NEGATIVE_NUM 50	//for NN training
 #define INIT_GAUSSIAN_SIGMA 5
 #define PN_POSITIVE_OVERLAP 0.6 //too small?
 #define PN_NEGATIVE_OVERLAP 0.2
 //#define PN_NEGATIVE_MIN_SCALE 0.5 //relative to init bounding box **
+
+#define DETECTOR_CLUSTER_MIN_OVERLAP 0.5
 
 #define NUM_FERNS 10
 #define NUM_FERN_FEATURES 13

@@ -44,6 +44,6 @@ float EnsembleClassifier::getPosterior(const Mat& patchImg) const
 	}
 
 	//printf("%f\n", posterior / NUM_FERNS);
-	return (float)(posterior / NUM_FERNS);
+	return cvRound(posterior / NUM_FERNS);
 }
 

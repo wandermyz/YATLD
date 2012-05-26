@@ -27,11 +27,12 @@ void TLD::update(const Mat& frame, Mat& outputFrame)
 	this->outputFrame = outputFrame;
 
 	detector.update(frame, outputFrame);
-	tracker.update(frame, outputFrame);	
+	if (trainer.isResultFound())
+	{
+		tracker.update(frame, outputFrame, trainer.getResult());	
+	}
 	
-	float detectorConf = -1;
-	float trackerConf = -1;
-	if (detector.getBoundingBox() != NULL)
+	/*if (detector.getBoundingBox() != NULL)
 	{
 		rectangle(this->outputFrame, *detector.getBoundingBox(), Scalar(0, 0, 255), 1);	//red
 		detectorConf = detector.getBoundingBox()->conservativeSimilarity;
@@ -41,19 +42,19 @@ void TLD::update(const Mat& frame, Mat& outputFrame)
 	{
 		rectangle(this->outputFrame, *tracker.getBoundingBox(), Scalar(0, 255, 255), 1);	//yellow
 		trackerConf = tracker.getBoundingBox()->conservativeSimilarity;
-	}
+	}*/
 
 	trainer.update(frame);
-	if (trainer.getResult() != NULL)
+	if (trainer.isResultFound())
 	{
-		rectangle(this->outputFrame, *trainer.getResult(), Scalar(255,0,0), 2);
+		rectangle(this->outputFrame, trainer.getResult(), Scalar(255,0,0), 2);
 	}
 
 	
 //#ifdef DEBUG
 	cout << "[Result]" << endl;
-	cout << "Detector (R) Confidence: " << detectorConf << endl;
-	cout << "Tracker (Y) Confidence: " << trackerConf << endl;
+	//cout << "Detector (R) Confidence: " << detectorConf << endl;
+	//cout << "Tracker (Y) Confidence: " << trackerConf << endl;
 	cout << "NN Samples: " << detector.getNNClassifier().getPositiveNum() << "+, " << detector.getNNClassifier().getNegativeNum() << "-"<< endl;
 	cout << endl;
 //#endif

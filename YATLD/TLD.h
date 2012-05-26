@@ -27,7 +27,7 @@ public:
 
 	inline const BoundingBox* getBoundingBox() const
 	{
-		return trainer.getResult(); 
+		return trainer.isResultFound() ? &trainer.getResult() : NULL;
 	}
 };
 

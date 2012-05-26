@@ -13,10 +13,12 @@ class Trainer
 private:
 	Detector& detector;
 	Tracker& tracker;
-	const BoundingBox* result;
+	BoundingBox result;
 	cv::RNG rng;
+	cv::Mat frame;
 
 	bool reliable;
+	bool resultFound;
 
 	//parameters
 	float shiftChange, scaleChange, rotationChange, gaussianSigma;
@@ -30,8 +32,8 @@ private:
 	void generatePatches();
 	//void learnByPExpert(const cv::Mat& frame, bool init);
 	//void learnByNExpert(const cv::Mat& frame, bool init);
-	void trainEnsemble(const cv::Mat& frame, bool init);
-	void trainNN(const cv::Mat& frame, bool init);
+	void trainEnsemble(bool init);
+	void trainNN(bool init);
 	static bool compareOverlap(const BoundingBox* bb1, const BoundingBox* bb2);
 
 public:
@@ -40,9 +42,14 @@ public:
 	void init(const cv::Mat& frame, const BoundingBox& boundingBox);
 	void update(const cv::Mat& frame);
 
-	inline const BoundingBox* getResult() const
+	inline const BoundingBox& getResult() const
 	{
 		return result;
+	}
+
+	inline bool isResultFound() const
+	{
+		return resultFound;
 	}
 };
 

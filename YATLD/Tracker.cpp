@@ -13,10 +13,10 @@ Tracker::Tracker(Detector& detector) : detector(detector), lkWindowSize(LK_WINDO
 void Tracker::init(const Mat& frame, const BoundingBox& initBoundingBox)
 {
 	this->prevFrame = frame.clone();
-	this->prevBoundingBox = initBoundingBox;
+	this->boundingBox = initBoundingBox;
 }
 
-void Tracker::update(const Mat& frame, Mat& outputFrame)
+void Tracker::update(const Mat& frame, Mat& outputFrame, const BoundingBox& previousBoundingBox)
 {
 #ifdef DEBUG
 	cout << "[Tracker]" << endl;
@@ -28,12 +28,12 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 	prevPoints.clear();
 	Point p;
 	
-	int stepH = ceil((double)prevBoundingBox.width / (double)TRACKER_GRID_POINT_NUM_H);
-	int stepV = ceil((double)prevBoundingBox.height / (double)TRACKER_GRID_POINT_NUM_V);
+	int stepH = ceil((double)previousBoundingBox.width / (double)TRACKER_GRID_POINT_NUM_H);
+	int stepV = ceil((double)previousBoundingBox.height / (double)TRACKER_GRID_POINT_NUM_V);
 
-	for (p.y = prevBoundingBox.y; p.y < prevBoundingBox.br().y; p.y += stepV)
+	for (p.y = previousBoundingBox.y; p.y < previousBoundingBox.br().y; p.y += stepV)
 	{
-		for (p.x = prevBoundingBox.x; p.x < prevBoundingBox.br().x; p.x += stepH)
+		for (p.x = previousBoundingBox.x; p.x < previousBoundingBox.br().x; p.x += stepH)
 		{
 			prevPoints.push_back(p);
 		}
@@ -173,25 +173,25 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 		//printf("%f %f\n", xOffset, yOffset);
 
 		//update bounding box
-		float s1 = 0.5f * (scale-1) * prevBoundingBox.width;		//TODO: try scale with center of the median
-		float s2 = 0.5f * (scale-1) * prevBoundingBox.height;
+		float s1 = 0.5f * (scale-1) * previousBoundingBox.width;		//TODO: try scale with center of the median
+		float s2 = 0.5f * (scale-1) * previousBoundingBox.height;
 		
 		//important!!! (int)(x + 0.5) not work if x < 0!!!
-		prevBoundingBox.x = (int)(prevBoundingBox.x + xOffset - s1 + 0.5);
-		prevBoundingBox.y = (int)(prevBoundingBox.y + yOffset - s2 + 0.5);
+		boundingBox.x = cvRound(previousBoundingBox.x + xOffset - s1);
+		boundingBox.y = cvRound(previousBoundingBox.y + yOffset - s2);
 
-		prevBoundingBox.width = (int)(prevBoundingBox.width * scale + 0.5);
-		prevBoundingBox.height = (int)(prevBoundingBox.height * scale + 0.5);
+		boundingBox.width = cvRound(previousBoundingBox.width * scale);
+		boundingBox.height = cvRound(previousBoundingBox.height * scale);
 
 		//find conservative similarity
-		Rect trimmed = prevBoundingBox & Rect(0, 0, frame.cols, frame.rows);
+		Rect trimmed = boundingBox & Rect(0, 0, frame.cols, frame.rows);
 
 		if (trimmed.area() == 0)
 		{
 			break;
 		}
-		detector.getNNClassifier().getSimilarity(frame(trimmed), &prevBoundingBox.relativeSimilarity, &prevBoundingBox.conservativeSimilarity);
-		prevBoundingBox.state = (prevBoundingBox.relativeSimilarity > NN_THRESHOLD) ? TrackedAcceptedByNN : TrackedRejectedByNN;
+		detector.getNNClassifier().getSimilarity(frame(trimmed), &boundingBox.relativeSimilarity, &boundingBox.conservativeSimilarity);
+		boundingBox.state = (boundingBox.relativeSimilarity > NN_THRESHOLD) ? TrackedAcceptedByNN : TrackedRejectedByNN;
 
 		//draw output
 		for (int i = 0; i < nGoodPoints; i++) 
@@ -200,7 +200,7 @@ void Tracker::update(const Mat& frame, Mat& outputFrame)
 			//circle(outputFrame, nextPoints[i], 2, Scalar(0, 255, 0), 1);
 			line(outputFrame, prevPoints[i], nextPoints[i], Scalar(0, 255, 0), 1);
 		}
-		//rectangle(outputFrame, prevBoundingBox, Scalar(0, 255, 255), 2);
+		rectangle(outputFrame, boundingBox, Scalar(0, 255, 255), 2);
 
 		tracked = true;
 	} while(0);

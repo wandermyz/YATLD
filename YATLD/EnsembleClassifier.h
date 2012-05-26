@@ -22,7 +22,8 @@ public:
 	inline void update(const cv::Mat& frame)
 	{
 		this->frame = frame;
-		GaussianBlur(frame, frameBlurred, cv::Size(0, 0), FERN_GAUSSIAN_SIGMA);
+		//GaussianBlur(frame, frameBlurred, cv::Size(0, 0), FERN_GAUSSIAN_SIGMA);
+		GaussianBlur(frame, frameBlurred, cv::Size(9,9), 1.5);
 	}
 
 	void train(const cv::Mat& patchImg, bool isPositive);	//patchImg should be blurred outside
@@ -34,7 +35,7 @@ public:
 
 	inline bool acceptPatch(const BoundingBox& patch) const
 	{
-		return getPosterior(patch) >= 0.5;
+		return getPosterior(patch) >= 0.64; //0.5;	//TODO: seems to be evaluated
 	}
 
 	inline const cv::Mat& getFrameBlurred()

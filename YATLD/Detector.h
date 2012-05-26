@@ -20,9 +20,13 @@ private:
 	EnsembleClassifier ensembleClassifier;
 	NNClassifier nnClassifier;
 
-	const BoundingBox* finalBoundingBox;	//TODO: clustering
+	//const BoundingBox* finalBoundingBox;	
+	std::vector<const BoundingBox*> detectedBoundingBoxes;
+	std::vector<BoundingBox> clusteredBoundingBoxes;	//clusterred bounding boxes
 
 	void generateScanGrids(const BoundingBox& initBoundingBox);
+	void cluster();
+	static bool isIdenticalBoundingBox(const BoundingBox* bb1, const BoundingBox* bb2);
 
 public:
 	Detector();
@@ -45,9 +49,19 @@ public:
 		return nnClassifier;
 	}
 
-	inline const BoundingBox* getBoundingBox()
+	/*inline const BoundingBox* getBoundingBox()
 	{
 		return finalBoundingBox;
+	}*/
+
+	inline const std::vector<const BoundingBox*>& getDetectedBoundingBoxes() const
+	{
+		return detectedBoundingBoxes;
+	}
+
+	inline const std::vector<BoundingBox>& getClusteredBoundingBoxes() const
+	{
+		return clusteredBoundingBoxes;
 	}
 
 	inline void refreshGridOverlap(const BoundingBox& ref)
@@ -61,6 +75,11 @@ public:
 	inline const PatchVariance& getPatchVariance() const
 	{
 		return patchVariance;
+	}
+
+	inline bool isDetected() const
+	{
+		return !detectedBoundingBoxes.empty();
 	}
 };
 

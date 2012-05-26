@@ -12,7 +12,9 @@ void Detector::init(const cv::Mat& frame, const BoundingBox& boundingBox, Mat& o
 {
 	this->frame = frame;
 	this->outputFrame = outputFrame;
-	this->finalBoundingBox = &boundingBox;
+	//this->finalBoundingBox = &boundingBox;
+	detectedBoundingBoxes.push_back(&boundingBox);
+	clusteredBoundingBoxes.push_back(boundingBox);
 
 	generateScanGrids(boundingBox);
 	patchVariance.init(frame, boundingBox);
@@ -37,31 +39,19 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 	int nPatches = 0, nEnsemblePatches = 0, nNNPatches = 0, nFinalPatches = 0;
 #endif
 
+	detectedBoundingBoxes.clear();
+	clusteredBoundingBoxes.clear();
+
 	float maxNNSimilarity = 0;
 	vector<BoundingBox>::const_iterator maxNNpatchIt;
 
 	patchVariance.update(frame);
 	ensembleClassifier.update(frame);
 
-#ifdef MEASURE_TIME
-	double totalTime = 0;
-	double varianceTotalTime = 0;
-	double ensembleTotalTime = 0;
-	double nnTotalTime = 0;
-#endif
-
 	for (vector<BoundingBox>::iterator patchIt = scanGrids.begin(); patchIt != scanGrids.end(); ++patchIt)
 	{
-#ifdef MEASURE_TIME
-		double time = 0, varianceTime = 0, ensembleTime = 0, nnTime = 0;
-#endif
-
 		do
 		{
-#ifdef MEASURE_TIME
-			time = getTickCount();
-#endif
-
 			patchIt->state = UnknownState;
 
 #ifdef DEBUG
@@ -69,9 +59,6 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 			//rectangle(outputFrame, patch, Scalar(255,255,255));
 #endif
 
-#ifdef MEASURE_TIME
-			varianceTime = getTickCount();
-#endif
 			if (!patchVariance.acceptPatch(*patchIt))
 			{
 				patchIt->state = RejectedByVariance;
@@ -84,9 +71,6 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 			//rectangle(outputFrame, patch, Scalar(255,0,0), 2);
 #endif
 
-#ifdef MEASURE_TIME
-			ensembleTime = getTickCount();
-#endif
 			if (!ensembleClassifier.acceptPatch(*patchIt))
 			{
 				patchIt->state = RejectedByEnsemble;
@@ -99,9 +83,6 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 			//rectangle(outputFrame, *patchIt, Scalar(255,0,0), 1);
 #endif
 
-#ifdef MEASURE_TIME
-			nnTime = getTickCount();
-#endif
 			nnClassifier.getSimilarity(frame(*patchIt), &patchIt->relativeSimilarity, &patchIt->conservativeSimilarity);
 			if (patchIt->relativeSimilarity > maxNNSimilarity)
 			{
@@ -117,27 +98,16 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 
 			//final
 			patchIt->state = DetectedAcceptedByNN;
-			rectangle(outputFrame, *patchIt, Scalar(255,0,0), 1);
+			detectedBoundingBoxes.push_back(&(*patchIt));
 
 #ifdef DEBUG
 			nFinalPatches++;
+			rectangle(outputFrame, *patchIt, Scalar(0,255,255), 1);
 #endif
 		} while (false);
 
-#ifdef MEASURE_TIME
-		double endTime = getTickCount();
-		varianceTotalTime += ((ensembleTime == 0 ? endTime : ensembleTime) - varianceTime) / getTickFrequency();
-		ensembleTotalTime += (ensembleTime == 0 ? 0 : ((nnTime == 0 ? endTime : nnTime) - ensembleTime)) / getTickFrequency();
-		nnTotalTime += (nnTime == 0 ? 0 : (endTime - varianceTime)) / getTickFrequency();
-		totalTime += ((double)getTickCount() - time) / getTickFrequency();
-#endif
-
 		//rectangle(outputFrame, *patchIt, Scalar(255,0,0), 2);
 	}
-
-#ifdef MEASURE_TIME
-	printf("Detector Time: %f, %f, %f, %f\n", varianceTotalTime, ensembleTotalTime, nnTotalTime, totalTime);
-#endif
 
 #ifdef DEBUG
 	cout << "Total patches: " << nPatches << endl;
@@ -149,7 +119,79 @@ void Detector::update(const cv::Mat& frame, cv::Mat& outputFrame)
 	//rectangle(outputFrame, *maxNNpatchIt, Scalar(0, 0, 255), 2);
 #endif
 
-	finalBoundingBox = maxNNSimilarity <= NN_THRESHOLD ? NULL : &(*maxNNpatchIt);
+	//finalBoundingBox = maxNNSimilarity <= NN_THRESHOLD ? NULL : &(*maxNNpatchIt);
+	if (!detectedBoundingBoxes.empty())
+	{
+		cluster();
+	}
+}
+
+void Detector::cluster()
+{
+	vector<int> clusterInd;
+	int nClusters;
+
+	if (detectedBoundingBoxes.size() == 1)
+	{
+		clusteredBoundingBoxes.push_back(*detectedBoundingBoxes[0]);
+		nClusters = 1;
+		return;
+	}
+	else if (detectedBoundingBoxes.size() == 2)
+	{
+		clusterInd.push_back(0);
+		clusterInd.push_back(detectedBoundingBoxes[0]->getOverlap(*detectedBoundingBoxes[1]) < DETECTOR_CLUSTER_MIN_OVERLAP ? 1 : 0);
+		nClusters = clusterInd[1] == 1 ? 2 : 1;
+	}
+	else
+	{
+		nClusters = partition(detectedBoundingBoxes, clusterInd, isIdenticalBoundingBox);
+	}
+
+	int* counters = new int[nClusters];
+	memset(counters, 0, nClusters * sizeof(int));
+
+	//create clusters
+	for (int i = 0; i < nClusters; i++)	
+	{
+		clusteredBoundingBoxes.push_back(BoundingBox(0, 0, 0, 0));
+		//boundingBoxes[i].conservativeSimilarity = 0;
+		//boundingBoxes[i].relativeSimilarity = 0;
+		clusteredBoundingBoxes[i].state = DetectedCluster;
+	}
+
+	//find average
+	for (int i = 0; i < detectedBoundingBoxes.size(); i++)
+	{
+		clusteredBoundingBoxes[clusterInd[i]].x += detectedBoundingBoxes[i]->x;
+		clusteredBoundingBoxes[clusterInd[i]].y += detectedBoundingBoxes[i]->y;
+		clusteredBoundingBoxes[clusterInd[i]].width += detectedBoundingBoxes[i]->width;
+		clusteredBoundingBoxes[clusterInd[i]].height += detectedBoundingBoxes[i]->height;
+		counters[clusterInd[i]]++;
+	}
+
+	for (int i = 0; i < nClusters; i++)
+	{
+#ifdef DEBUG
+		assert(counters[i] > 0);
+#endif
+
+		clusteredBoundingBoxes[i].x = cvRound(clusteredBoundingBoxes[i].x / (double)counters[i]);
+		clusteredBoundingBoxes[i].y = cvRound(clusteredBoundingBoxes[i].y / (double)counters[i]);
+		clusteredBoundingBoxes[i].width = cvRound(clusteredBoundingBoxes[i].width / (double)counters[i]);
+		clusteredBoundingBoxes[i].height = cvRound(clusteredBoundingBoxes[i].height / (double)counters[i]);
+		rectangle(outputFrame, clusteredBoundingBoxes[i], Scalar(0, 128, 255), 2);
+	}
+	#ifdef DEBUG
+		cout << "Clusters: " << nClusters << endl;
+	#endif
+	
+	delete [] counters;
+}
+
+bool Detector::isIdenticalBoundingBox(const BoundingBox* bb1, const BoundingBox* bb2)
+{
+	return (bb1->getOverlap(*bb2) >= DETECTOR_CLUSTER_MIN_OVERLAP);
 }
 
 void Detector::generateScanGrids(const BoundingBox& initBoundingBox)

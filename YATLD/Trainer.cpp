@@ -24,12 +24,14 @@ void Trainer::init(const cv::Mat& frame, const BoundingBox& boundingBox)
 	positiveNum = INIT_POSITIVE_NUM;
 	negativeNum = INIT_NEGATIVE_NUM;
  
-	result = &boundingBox;
+	this->frame = frame;
+	result = boundingBox;
+	resultFound = true;
 	generatePatches();
 	//learnByPExpert(frame, true);
 	//learnByNExpert(frame, true);
-	trainEnsemble(frame, true);
-	trainNN(frame, true);
+	trainEnsemble(true);
+	trainNN(true);
 
 	reliable = true;
 
@@ -48,6 +50,7 @@ void Trainer::update(const Mat& frame)
 #ifdef DEBUG
 	cout << "[Trainer]" << endl;
 #endif
+	this->frame = frame;
 	combine();
 
 #ifdef DEBUG	//make sure everything is correctly assigned
@@ -58,22 +61,22 @@ void Trainer::update(const Mat& frame)
 		assert(tracker.getBoundingBox()->relativeSimilarity >= 0);
 	}
 
-	if (detector.getBoundingBox() != NULL)
+	/*if (detector.getBoundingBox() != NULL)
 	{
 		assert(tracker.getBoundingBox()->state != UnknownState);
 		assert(detector.getBoundingBox()->conservativeSimilarity >= 0);
 		assert(detector.getBoundingBox()->relativeSimilarity >= 0);
-	}
+	}*/
 
-	if (result != NULL)
+	if (resultFound)
 	{
-		assert(result->state != UnknownState);
-		assert(result->conservativeSimilarity >= 0);
-		assert(result->relativeSimilarity >= 0);
+		assert(result.state != UnknownState);
+		assert(result.conservativeSimilarity >= 0);
+		assert(result.relativeSimilarity >= 0);
 	}
 #endif
 
-	bool reInit = detector.getBoundingBox() != NULL
+	/*bool reInit = detector.getBoundingBox() != NULL
 		&& (tracker.getBoundingBox() == NULL || detector.getBoundingBox()->conservativeSimilarity > tracker.getBoundingBox()->conservativeSimilarity);
 
 	//update reliable
@@ -92,7 +95,7 @@ void Trainer::update(const Mat& frame)
 #ifdef DEBUG
 		cout << "Tracker reset." << endl;
 #endif
-	}
+	}*/
 
 #ifdef DEBUG
 	cout << "Reliable: " << reliable << endl;
@@ -101,10 +104,10 @@ void Trainer::update(const Mat& frame)
 	//P-N learning
 	if (reliable)
 	{
-		detector.refreshGridOverlap(*result);
+		detector.refreshGridOverlap(result);
 		generatePatches();
-		trainEnsemble(frame, false);
-		trainNN(frame, false);
+		trainEnsemble(false);
+		trainNN(false);
 		//learnByPExpert(frame, false);
 		//learnByNExpert(frame, false);
 
@@ -117,19 +120,126 @@ void Trainer::update(const Mat& frame)
 
 void Trainer::combine()
 {
-	result = NULL;
-	
-	if (detector.getBoundingBox() != NULL)
+	if (tracker.isTracked())
 	{
-		result = detector.getBoundingBox();
+		result = *tracker.getBoundingBox();
+		resultFound = true;
+		if (result.conservativeSimilarity > TRAINER_CORE_THRESHOLD)
+		{
+			reliable = true;
+		}
+
+#ifdef DEBUG
+		assert(result.conservativeSimilarity > 0);
+#endif
+
+		vector<const BoundingBox*> confidentClusters;
+		if (detector.isDetected())
+		{
+			for (vector<BoundingBox>::const_iterator it = detector.getClusteredBoundingBoxes().begin(); it != detector.getClusteredBoundingBoxes().end(); ++it)
+			{
+				if (it->getOverlap(result) < DETECTOR_CLUSTER_MIN_OVERLAP) //far away
+				{
+					float conservativeSim;
+					if (it->state == DetectedAcceptedByNN)
+					{
+#ifdef DEBUG
+						assert(it->conservativeSimilarity > 0);
+#endif
+						conservativeSim = it->conservativeSimilarity;
+					}
+					else if (it->state == DetectedCluster)
+					{
+						detector.getNNClassifier().getSimilarity(frame(*it), NULL, &conservativeSim);
+					}
+#ifdef DEBUG
+					else
+					{
+						assert(0);
+					}
+#endif
+
+#ifdef DEBUG
+					cout << "Tracker " << result.conservativeSimilarity << " vs. Detector " << conservativeSim << endl;
+#endif
+					if (conservativeSim > result.conservativeSimilarity)
+					{
+						confidentClusters.push_back(&(*it));
+					}
+				}
+			}
+
+#ifdef DEBUG
+			cout << "Confident Clusters: " << confidentClusters.size() << endl;
+#endif
+
+			if (confidentClusters.size() == 1)	//only 1 cluster, re-init tracker
+			{
+				//tracker.reset(*confidentClusters[0]);
+				reliable = false;
+				result = *confidentClusters[0];
+#ifdef DEBUG
+				cout << "Tracker reset." << endl;
+#endif
+			}
+			else	//no cluster, or more than one cluster, average	//TODO: why?
+			{
+				BoundingBox avgBb(0,0,0,0);
+				int nClosed = 0;
+
+				for (vector<const BoundingBox*>::const_iterator it = detector.getDetectedBoundingBoxes().begin(); it != detector.getDetectedBoundingBoxes().end(); ++it)
+				{
+					const BoundingBox& bb = **it;
+					if (bb.getOverlap(result) > 0.7)	//TODO: threshold
+					{
+						avgBb.x += bb.x;
+						avgBb.y += bb.y;
+						avgBb.width += bb.width;
+						avgBb.height += bb.height;
+						nClosed++;
+					}
+				}
+
+				if (nClosed > 0)
+				{
+					int weight = 10;	//TODO: threshold
+					result.x = cvRound((float)(weight * result.x + avgBb.x) / (float)(weight + nClosed));
+					result.y = cvRound((float)(weight * result.y + avgBb.y) / (float)(weight + nClosed));
+					result.width = cvRound((float)(weight * result.width + avgBb.width) / (float)(weight + nClosed));
+					result.height = cvRound((float)(weight * result.height + avgBb.height) / (float)(weight + nClosed));
+					result.state = TrackedWeighted;
+#ifdef DEBUG
+					result.relativeSimilarity = -1;
+					result.conservativeSimilarity = -1;
+					cout << "Result weighted by " << nClosed << " closed bounding boxes." << endl;
+#endif
+				}
+			}
+
+		}
+	}	
+	else //if not tracked
+	{
+		reliable = false;
+		resultFound = false;
+
+		if (detector.isDetected())
+		{
+			if (detector.getClusteredBoundingBoxes().size() == 1)
+			{
+				result = detector.getClusteredBoundingBoxes()[0];
+				resultFound = true;
+#ifdef DEBUG
+				cout << "Tracker reset." << endl;
+#endif
+			}
+		}
 	}
 
-	if (tracker.getBoundingBox() != NULL)
+	if (resultFound && (result.state == DetectedCluster || result.state == TrackedWeighted))
 	{
-		if (result == NULL || tracker.getBoundingBox()->conservativeSimilarity > result->conservativeSimilarity)
-		{
-			result = tracker.getBoundingBox();
-		}
+		Rect intersect = result & Rect(0, 0, frame.cols, frame.rows);
+		detector.getNNClassifier().getSimilarity(frame(intersect), &result.relativeSimilarity, &result.conservativeSimilarity);
 	}
 }
 
@@ -164,13 +274,16 @@ bool Trainer::compareOverlap(const BoundingBox* bb1, const BoundingBox* bb2)
 	return bb1->getOverlap() > bb2->getOverlap();	
 }
 
-void Trainer::trainEnsemble(const Mat& frame, bool init)
+void Trainer::trainEnsemble(bool init)
 {
 	vector<pair<Mat, bool>> ensembleSamples;
-	const Mat& blurred = detector.getEnsembleClassifier().getFrameBlurred();
+	//const Mat& blurred = detector.getEnsembleClassifier().getFrameBlurred();
+
+	Mat blurred;
+	GaussianBlur(frame, blurred, Size(9, 9), 1.5);	//TODO: threshold
 
 	//synthesize positive
-	for (int i = 0; i < min(positiveNum, (int)positivePatches.size());  i++)
+	/*for (int i = 0; i < min(positiveNum, (int)positivePatches.size());  i++)
 	{
 		const BoundingBox& patch = *positivePatches[i];
 		Mat patchImg = blurred(patch);
@@ -200,13 +313,75 @@ void Trainer::trainEnsemble(const Mat& frame, bool init)
 
 			ensembleSamples.push_back(make_pair<Mat, bool>(warpedImg, true));
 		}
+	}*/
+
+	//find positive hull
+	int x1 = frame.cols, x2 = 0;
+	int y1 = frame.rows, y2 = 0;
+
+	for (int i = 0; i < min(positiveNum, (int)positivePatches.size()); i++)
+	{
+		x1 = min(positivePatches[i]->x, x1);
+		y1 = min(positivePatches[i]->y, y1);
+		x2 = max(positivePatches[i]->br().x, x2);
+		y2 = max(positivePatches[i]->br().y, y2);
+	}
+
+	BoundingBox positiveHull(x1, y1, x2 - x1, y2 - y1);
+
+	for (int j = 0; j < synthesisNum; j++)
+	{
+		int shiftH, shiftV;
+		Mat warpedImg;
+
+		if (j > 0)
+		{
+			shiftH = (int)(rng.uniform(-shiftChange * frame.cols, shiftChange * frame.cols) + 0.5);
+			shiftV = (int)(rng.uniform(-shiftChange * frame.rows, shiftChange * frame.rows) + 0.5);
+			double scale = 1 + rng.uniform(-scaleChange, scaleChange);
+			double rotation = rng.uniform(-rotationChange, rotationChange);
+
+			Mat rotMat = getRotationMatrix2D(Point(positiveHull.x + positiveHull.width / 2, positiveHull.y + positiveHull.height / 2), rotation, scale);
+			warpAffine(blurred, warpedImg, rotMat, blurred.size());
+
+			//Add gaussian noise
+			Mat gaussianNoise(warpedImg.size(), CV_8S);
+			rng.fill(gaussianNoise, RNG::NORMAL, 0, INIT_GAUSSIAN_SIGMA);
+
+			add(warpedImg, gaussianNoise, warpedImg, noArray(), CV_8U);
+		}
+		else
+		{
+			warpedImg = blurred;
+			shiftH = 0;
+			shiftV = 0;
+		}
+
+		/*Mat tmp = warpedImg.clone();
+		rectangle(tmp, positiveHull, Scalar(255,0,0), 1);
+
+		imshow("test", tmp);
+		waitKey();*/
+
+		for (int i = 0; i < min(positiveNum, (int)positivePatches.size()); i++)
+		{
+			Mat warpedPatch = warpedImg(*positivePatches[i]);
+			warpedPatch.adjustROI(-shiftV, shiftV, -shiftH, shiftH);
+			ensembleSamples.push_back(make_pair<Mat,bool>(warpedPatch, true));
+			/*if (i == 0)
+			{
+				imshow("test", warpedPatch);
+				waitKey();
+			}*/
+		}
 	}
 	
 	//add negative samples
-	for (int i = 0; i < negativePatches.size(); i++)
+	for (int i = 0; i < negativePatches.size() / 2; i++)	//TODO: for comparison, just take half
 	{
 		const BoundingBox& patch = *negativePatches[i];
 		ensembleSamples.push_back(make_pair<Mat, bool>(blurred(patch), false));
+		//ensembleSamples.push_back(make_pair<Mat, bool>(frame(patch), false));
 	}
 
 	//shuffle
@@ -231,18 +406,18 @@ void Trainer::trainEnsemble(const Mat& frame, bool init)
 	cout << "Train Ensemble: Positive " << posCount << ", Negative " << negCount << endl;
 }
 
-void Trainer::trainNN(const Mat& frame, bool init)
+void Trainer::trainNN(bool init)
 {
 	int posCount = 0, negCount = 0;
 
 	//train positive
 	#ifdef DEBUG
-		assert(init || result->relativeSimilarity > 0);
+		assert(init || result.relativeSimilarity > 0);
 	#endif
 
-	if (init || result->relativeSimilarity < 0.65)		//TODO: evaluate threshold
+	if (init || result.relativeSimilarity < 0.65)		//TODO: evaluate threshold
 	{	
-		Rect intersect = *result & Rect(0, 0, frame.cols, frame.rows);
+		Rect intersect = result & Rect(0, 0, frame.cols, frame.rows);
 		detector.getNNClassifier().train(frame(intersect), true);
 		posCount++;
 	}
@@ -269,7 +444,7 @@ void Trainer::trainNN(const Mat& frame, bool init)
 			detector.getNNClassifier().getSimilarity(frame(patch), &relativeSimilarity, NULL);
 		}
 
-		if (relativeSimilarity > 0.55 /*0.5*/)	//TODO: threshold?
+		if (relativeSimilarity > 0.5)	//TODO: threshold?
 		{
 			detector.getNNClassifier().train(frame(patch), false);
 			negCount++;

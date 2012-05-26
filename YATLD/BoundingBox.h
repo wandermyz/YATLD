@@ -11,8 +11,10 @@ typedef enum
 	RejectedByEnsemble,
 	RejectedByNN,
 	DetectedAcceptedByNN,
+	DetectedCluster,
 	TrackedRejectedByNN,
 	TrackedAcceptedByNN,
+	TrackedWeighted,
 } PatchState;
 
 class BoundingBox : public cv::Rect
@@ -26,9 +28,9 @@ public:
 	PatchState state;
 
 #ifdef DEBUG
-	BoundingBox() : overlap(-1), relativeSimilarity(-1), conservativeSimilarity(-1) { }
-	BoundingBox(const cv::Rect& rect) : cv::Rect(rect), overlap(-1), relativeSimilarity(-1), conservativeSimilarity(-1) { }
-	BoundingBox(int x, int y, int w, int h) : cv::Rect(x, y, w, h), overlap(-1), relativeSimilarity(-1), conservativeSimilarity(-1) { }
+	BoundingBox() : overlap(-1), relativeSimilarity(-1), conservativeSimilarity(-1), state(UnknownState) { }
+	BoundingBox(const cv::Rect& rect) : cv::Rect(rect), overlap(-1), relativeSimilarity(-1), conservativeSimilarity(-1), state(UnknownState) { }
+	BoundingBox(int x, int y, int w, int h) : cv::Rect(x, y, w, h), overlap(-1), relativeSimilarity(-1), conservativeSimilarity(-1), state(UnknownState) { }
 #else
 	BoundingBox() { }
 	BoundingBox(const cv::Rect& rect) : cv::Rect(rect) { }
@@ -38,13 +40,19 @@ public:
 	inline cv::Point tr() const { return cv::Point(x + width, y); }
 	inline cv::Point bl() const { return cv::Point(x, y + height); }
 
-	float refreshOverlap(const cv::Rect& ref)
+	inline float refreshOverlap(const cv::Rect& ref)
+	{
+		overlap = getOverlap(ref);
+		return overlap;
+	}
+
+	float getOverlap(const cv::Rect& ref) const
 	{
 		int w = std::max(0, std::min(x + width, ref.x + ref.width) - std::max(x, ref.x));
 		int h = std::max(0, std::min(y + height, ref.y + ref.height) - std::max(y, ref.y));
 		int unionArea = area() + ref.area() - w * h;
-		overlap = (float)(w * h) / (float)unionArea;
-		return overlap;
+		float tmpOverlap = (float)(w * h) / (float)unionArea;
+		return tmpOverlap;
 	}
 
 	inline float getOverlap() const

@@ -13,7 +13,7 @@ private:
 	Detector& detector;
 
 	cv::Mat prevFrame;	//deep copy
-	BoundingBox prevBoundingBox;
+	BoundingBox boundingBox;
 	bool tracked;
 
 	std::vector<cv::Point2f> prevPoints;
@@ -51,16 +51,21 @@ public:
 	Tracker(Detector& detector);
 
 	void init(const cv::Mat& frame, const BoundingBox& initBoundingBox);
-	void update(const cv::Mat& frame, cv::Mat& outputFrame);
+	void update(const cv::Mat& frame, cv::Mat& outputFrame, const BoundingBox& previousBoundingBox);
 
-	inline void reset(const BoundingBox& boundingBox)
+	/*inline void reset(const BoundingBox& boundingBox)
 	{
 		prevBoundingBox = boundingBox;
-	}
+	}*/
 
 	inline const BoundingBox* getBoundingBox() const
 	{
-		return tracked ? &prevBoundingBox : NULL;
+		return tracked ? &boundingBox : NULL;
+	}
+
+	inline bool isTracked() const
+	{
+		return tracked;
 	}
 };
 

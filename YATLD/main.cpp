@@ -83,7 +83,8 @@ int main(int argc, char* argv[])
 	int nFrames = cap.get(CV_CAP_PROP_FRAME_COUNT);
 
 #ifdef DEBUG
-	while(waitKey(frameCount < 23 ? 1 : 0) != 27)
+	//while(waitKey(frameCount < 23 ? 1 : 0) != 27)
+	while(waitKey() != 27)
 #else
 	while(waitKey(1) != 27)
 #endif
