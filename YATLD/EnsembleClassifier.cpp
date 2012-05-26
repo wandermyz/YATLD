@@ -4,22 +4,24 @@ using namespace cv;
 
 EnsembleClassifier::EnsembleClassifier()
 {
-	comparators = new PixelComparator[NUM_FERNS];
+	//comparators = new PixelComparator[NUM_FERNS];
 }
 
 EnsembleClassifier::~EnsembleClassifier()
 {
-	delete [] comparators;
-	comparators = NULL;
+	//delete [] comparators;
+	//comparators = NULL;
 }
 
 void EnsembleClassifier::init(const Mat& frame)
 {
-	RNG rng;
+	//RNG rng(0);		//TODO: just for comparison
+	RNG& rng = theRNG();
 
 	//generate base classifiers
 	for (int i = 0; i < NUM_FERNS; i++)
 	{
+		comparators.push_back(PixelComparator());
 		comparators[i].init(rng);
 	}
 

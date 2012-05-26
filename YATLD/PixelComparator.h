@@ -7,11 +7,11 @@
 class PixelComparator
 {
 private:
-	cv::Point2f* srcPoints;
-	cv::Point2f* dstPoints;
-	int* nPositive;
-	int* nTotal;
-	float* distribution;
+	cv::Point2f srcPoints[NUM_FERN_FEATURES];
+	cv::Point2f dstPoints[NUM_FERN_FEATURES];
+	int nPositive[FERN_INDEX_SIZE];
+	int nTotal[FERN_INDEX_SIZE];
+	float distribution[FERN_INDEX_SIZE];
 
 public:
 	PixelComparator();

@@ -143,6 +143,7 @@ void TLD::generatePositiveData(const Mat& frame, int num_warps){
   GaussianBlur(frame,img,Size(9,9),1.5);
   warped = img(bbhull);
   RNG& rng = theRNG();
+  //RNG rng = RNG(0);	//TODO: Wander
   Point2f pt(bbhull.x+(bbhull.width-1)*0.5f,bbhull.y+(bbhull.height-1)*0.5f);
   vector<int> fern(classifier.getNumStructs());
   pX.clear();
@@ -156,6 +157,12 @@ void TLD::generatePositiveData(const Mat& frame, int num_warps){
        for (int b=0;b<good_boxes.size();b++){
          idx=good_boxes[b];
 		 patch = img(grid[idx]);
+		 /*if (b == 0)
+		 {
+			 printf("%d\n", i);
+			imshow("test", patch);
+			waitKey();
+		 }*/
          classifier.getFeatures(patch,grid[idx].sidx,fern);
          pX.push_back(make_pair(fern,1));
      }

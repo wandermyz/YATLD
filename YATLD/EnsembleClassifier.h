@@ -9,7 +9,7 @@
 class EnsembleClassifier
 {
 private:
-	PixelComparator* comparators;
+	std::vector<PixelComparator> comparators;
 	cv::Mat frame;
 	cv::Mat frameBlurred;
 

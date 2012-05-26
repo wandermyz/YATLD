@@ -3,12 +3,12 @@ using namespace cv;
 
 PixelComparator::PixelComparator()
 {
-	srcPoints = new Point2f[NUM_FERN_FEATURES];
+	/*srcPoints = new Point2f[NUM_FERN_FEATURES];
 	dstPoints = new Point2f[NUM_FERN_FEATURES];
 	
 	nPositive = new int[FERN_INDEX_SIZE];
 	nTotal = new int[FERN_INDEX_SIZE];
-	distribution = new float[FERN_INDEX_SIZE];
+	distribution = new float[FERN_INDEX_SIZE];*/
 
 	memset(nPositive, 0, FERN_INDEX_SIZE * sizeof(int));
 	memset(nTotal, 0, FERN_INDEX_SIZE * sizeof(int));
@@ -17,7 +17,7 @@ PixelComparator::PixelComparator()
 
 PixelComparator::~PixelComparator()
 {
-	delete [] srcPoints;
+	/*delete [] srcPoints;
 	srcPoints = NULL;
 
 	delete [] dstPoints;
@@ -30,7 +30,7 @@ PixelComparator::~PixelComparator()
 	nTotal = NULL;
 
 	delete [] distribution;
-	distribution = NULL;
+	distribution = NULL;*/
 }
 
 void PixelComparator::init(RNG& rng)
