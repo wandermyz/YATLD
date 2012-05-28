@@ -152,6 +152,10 @@ void Trainer::combine()
 					else if (it->state == DetectedCluster)
 					{
 						detector.getNNClassifier().getSimilarity(frame(*it), NULL, &conservativeSim);
+						//#ifdef DEBUG
+						//	assert(it->conservativeSimilarity > 0);
+						//#endif
+						//	conservativeSim = it->conservativeSimilarity;
 					}
 #ifdef DEBUG
 					else
@@ -316,73 +320,76 @@ void Trainer::trainEnsemble(bool init)
 		}
 	}*/
 
-	//find positive hull
-	int x1 = frame.cols, x2 = 0;
-	int y1 = frame.rows, y2 = 0;
-
-	for (int i = 0; i < min(positiveNum, (int)positivePatches.size()); i++)
+	if (positivePatches.size() > 0)
 	{
-		x1 = min(positivePatches[i]->x, x1);
-		y1 = min(positivePatches[i]->y, y1);
-		x2 = max(positivePatches[i]->br().x, x2);
-		y2 = max(positivePatches[i]->br().y, y2);
-	}
-
-	BoundingBox positiveHull(x1, y1, x2 - x1, y2 - y1);
-	Point2f pt(positiveHull.x + (positiveHull.width - 1) * 0.5f, positiveHull.y + (positiveHull.height - 1) * 0.5f);
-
-	Mat warped = blurred(positiveHull);
-
-	//RNG rng(0);	//TODO: just for comparison
-	RNG& rng = theRNG();
-
-	for (int j = 0; j < synthesisNum; j++)
-	{
-		//int shiftH, shiftV;
-		//Mat warpedImg;
-
-		if (j > 0)
-		{
-			/*shiftH = (int)(rng.uniform(-shiftChange * frame.cols, shiftChange * frame.cols) + 0.5);
-			shiftV = (int)(rng.uniform(-shiftChange * frame.rows, shiftChange * frame.rows) + 0.5);
-			double scale = 1 + rng.uniform(-scaleChange, scaleChange);
-			double rotation = rng.uniform(-rotationChange, rotationChange);
-
-			Mat rotMat = getRotationMatrix2D(Point(positiveHull.x + positiveHull.width / 2, positiveHull.y + positiveHull.height / 2), rotation, scale);
-			warpAffine(blurred, warpedImg, rotMat, blurred.size());
-
-			//Add gaussian noise
-			Mat gaussianNoise(warpedImg.size(), CV_8S);
-			rng.fill(gaussianNoise, RNG::NORMAL, 0, INIT_GAUSSIAN_SIGMA);
-
-			add(warpedImg, gaussianNoise, warpedImg, noArray(), CV_8U);*/
-			generator(frame, pt, warped, positiveHull.size(), rng);
-		}
-		/*else
-		{
-			warpedImg = blurred;
-			shiftH = 0;
-			shiftV = 0;
-		}*/
-
-		/*Mat tmp = warpedImg.clone();
-		rectangle(tmp, positiveHull, Scalar(255,0,0), 1);
-
-		imshow("test", tmp);
-		waitKey();*/
+		//find positive hull
+		int x1 = frame.cols, x2 = 0;
+		int y1 = frame.rows, y2 = 0;
 
 		for (int i = 0; i < min(positiveNum, (int)positivePatches.size()); i++)
 		{
-			//Mat warpedPatch = warpedImg(*positivePatches[i]);
-			//warpedPatch.adjustROI(-shiftV, shiftV, -shiftH, shiftH);
-			//ensembleSamples.push_back(make_pair<Mat,bool>(warpedPatch, true));
-			Mat warpedPatch = blurred(*positivePatches[i]);
-			ensembleSamples.push_back(make_pair<Mat,bool>(warpedPatch.clone(), true));
-			/*if (i == 0)
+			x1 = min(positivePatches[i]->x, x1);
+			y1 = min(positivePatches[i]->y, y1);
+			x2 = max(positivePatches[i]->br().x, x2);
+			y2 = max(positivePatches[i]->br().y, y2);
+		}
+
+		BoundingBox positiveHull(x1, y1, x2 - x1, y2 - y1);
+		Point2f pt(positiveHull.x + (positiveHull.width - 1) * 0.5f, positiveHull.y + (positiveHull.height - 1) * 0.5f);
+
+		Mat warped = blurred(positiveHull);
+
+		//RNG rng(0);	//TODO: just for comparison
+		RNG& rng = theRNG();
+
+		for (int j = 0; j < synthesisNum; j++)
+		{
+			//int shiftH, shiftV;
+			//Mat warpedImg;
+
+			if (j > 0)
 			{
-				imshow("test", warpedPatch);
-				waitKey();
+				/*shiftH = (int)(rng.uniform(-shiftChange * frame.cols, shiftChange * frame.cols) + 0.5);
+				shiftV = (int)(rng.uniform(-shiftChange * frame.rows, shiftChange * frame.rows) + 0.5);
+				double scale = 1 + rng.uniform(-scaleChange, scaleChange);
+				double rotation = rng.uniform(-rotationChange, rotationChange);
+
+				Mat rotMat = getRotationMatrix2D(Point(positiveHull.x + positiveHull.width / 2, positiveHull.y + positiveHull.height / 2), rotation, scale);
+				warpAffine(blurred, warpedImg, rotMat, blurred.size());
+
+				//Add gaussian noise
+				Mat gaussianNoise(warpedImg.size(), CV_8S);
+				rng.fill(gaussianNoise, RNG::NORMAL, 0, INIT_GAUSSIAN_SIGMA);
+
+				add(warpedImg, gaussianNoise, warpedImg, noArray(), CV_8U);*/
+				generator(frame, pt, warped, positiveHull.size(), rng);
+			}
+			/*else
+			{
+				warpedImg = blurred;
+				shiftH = 0;
+				shiftV = 0;
 			}*/
+
+			/*Mat tmp = warpedImg.clone();
+			rectangle(tmp, positiveHull, Scalar(255,0,0), 1);
+
+			imshow("test", tmp);
+			waitKey();*/
+
+			for (int i = 0; i < min(positiveNum, (int)positivePatches.size()); i++)
+			{
+				//Mat warpedPatch = warpedImg(*positivePatches[i]);
+				//warpedPatch.adjustROI(-shiftV, shiftV, -shiftH, shiftH);
+				//ensembleSamples.push_back(make_pair<Mat,bool>(warpedPatch, true));
+				Mat warpedPatch = blurred(*positivePatches[i]);
+				ensembleSamples.push_back(make_pair<Mat,bool>(warpedPatch.clone(), true));
+				/*if (i == 0)
+				{
+					imshow("test", warpedPatch);
+					waitKey();
+				}*/
+			}
 		}
 	}
 	
@@ -398,6 +405,12 @@ void Trainer::trainEnsemble(bool init)
 		}
 		//ensembleSamples.push_back(make_pair<Mat, bool>(blurred(patch), false));
 		ensembleSamples.push_back(make_pair<Mat, bool>(frame(patch), false));
+	}
+
+	if (ensembleSamples.empty())
+	{
+		cout << "Train Ensemble: No Samples" << endl;
+		return;
 	}
 
 	//shuffle

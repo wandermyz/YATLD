@@ -167,6 +167,13 @@ void Detector::cluster()
 		clusteredBoundingBoxes[clusterInd[i]].y += detectedBoundingBoxes[i]->y;
 		clusteredBoundingBoxes[clusterInd[i]].width += detectedBoundingBoxes[i]->width;
 		clusteredBoundingBoxes[clusterInd[i]].height += detectedBoundingBoxes[i]->height;
+
+//#ifdef DEBUG
+//		assert(detectedBoundingBoxes[i]->conservativeSimilarity > 0);
+//		assert(detectedBoundingBoxes[i]->relativeSimilarity > 0);
+//#endif
+		//clusteredBoundingBoxes[clusterInd[i]].conservativeSimilarity += detectedBoundingBoxes[i]->relativeSimilarity;
+		//clusteredBoundingBoxes[clusterInd[i]].conservativeSimilarity += detectedBoundingBoxes[i]->conservativeSimilarity;
 		counters[clusterInd[i]]++;
 	}
 
@@ -180,6 +187,8 @@ void Detector::cluster()
 		clusteredBoundingBoxes[i].y = cvRound(clusteredBoundingBoxes[i].y / (double)counters[i]);
 		clusteredBoundingBoxes[i].width = cvRound(clusteredBoundingBoxes[i].width / (double)counters[i]);
 		clusteredBoundingBoxes[i].height = cvRound(clusteredBoundingBoxes[i].height / (double)counters[i]);
+		//clusteredBoundingBoxes[i].conservativeSimilarity = cvRound(clusteredBoundingBoxes[i].conservativeSimilarity / (double)counters[i]);
+		//clusteredBoundingBoxes[i].relativeSimilarity = cvRound(clusteredBoundingBoxes[i].relativeSimilarity / (double)counters[i]);
 		rectangle(outputFrame, clusteredBoundingBoxes[i], Scalar(0, 128, 255), 2);
 	}
 	#ifdef DEBUG
