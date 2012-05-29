@@ -26,8 +26,7 @@ void FerNNClassifier::prepare(const vector<Size>& scales){
   //Initialize test locations for features
   int totalFeatures = nstructs*structSize;
   features = vector<vector<Feature> >(scales.size(),vector<Feature> (totalFeatures));
-  //RNG& rng = theRNG();
-  RNG rng = RNG(0);	//TODO: wander
+  RNG& rng = theRNG();
   float x1f,x2f,y1f,y2f;
   int x1, x2, y1, y2;
   for (int i=0;i<totalFeatures;i++){
@@ -95,10 +94,7 @@ void FerNNClassifier::trainF(const vector<std::pair<vector<int>,int> >& ferns,in
   //  double *Y     = mxGetPr(prhs[2]); ->ferns[i].second
   //  double thrP   = *mxGetPr(prhs[3]) * nTREES; ->threshold*nstructs
   //  int bootstrap = (int) *mxGetPr(prhs[4]); ->resample
-  thrP = thr_fern*nstructs;    
-
-  int posCount = 0, negCount = 0;
-                                                      // int step = numX / 10;
+  thrP = thr_fern*nstructs;                                                          // int step = numX / 10;
   //for (int j = 0; j < resample; j++) {                      // for (int j = 0; j < bootstrap; j++) {
       for (int i = 0; i < ferns.size(); i++){               //   for (int i = 0; i < step; i++) {
                                                             //     for (int k = 0; k < 10; k++) {
@@ -106,22 +102,13 @@ void FerNNClassifier::trainF(const vector<std::pair<vector<int>,int> >& ferns,in
                                                             //       double *x = X+nTREES*I; //tree index
           if(ferns[i].second==1){                           //       if (Y[I] == 1) {
               if(measure_forest(ferns[i].first)<=thrP)      //         if (measure_forest(x) <= thrP)
-              {
-				  update(ferns[i].first,1,1);                 //             update(x,1,1);
-				  posCount++;
-			  }
+                update(ferns[i].first,1,1);                 //             update(x,1,1);
           }else{                                            //        }else{
-			  float posterior = measure_forest(ferns[i].first);
-              if (posterior >= thrN)   //         if (measure_forest(x) >= thrN)
-			  {
+              if (measure_forest(ferns[i].first) >= thrN)   //         if (measure_forest(x) >= thrN)
                 update(ferns[i].first,0,1);                 //             update(x,0,1);
-				negCount++;
-			  }
           }
       }
   //}
-
-    printf("Trained Fern examples: %d positive %d negative\n", posCount, negCount);
 }
 
 void FerNNClassifier::trainNN(const vector<cv::Mat>& nn_examples){

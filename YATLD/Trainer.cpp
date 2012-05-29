@@ -8,8 +8,7 @@
 using namespace cv;
 using namespace std;
 
-Trainer::Trainer(Detector& detector, Tracker& tracker) : detector(detector), tracker(tracker),
-	generator(0, 0, 5, true, 1 - 0.02, 1 + 0.02, -20 * CV_PI / 180, 20 * CV_PI / 180, -20 * CV_PI / 180, 20 * CV_PI / 180)
+Trainer::Trainer(Detector& detector, Tracker& tracker) : detector(detector), tracker(tracker)
 {
 	
 }
@@ -257,8 +256,8 @@ void Trainer::generatePatches()
 			positivePatches.push_back(&(*patchIt));
 		}
 		//else if (patchIt->getOverlap() < PN_NEGATIVE_OVERLAP && patchIt->state != RejectedByVariance)
-		//else if (patchIt->getOverlap() < PN_NEGATIVE_OVERLAP && detector.getPatchVariance().acceptPatch(*patchIt, 0.25))	//TODO: why?
-		else if (patchIt->getOverlap() < PN_NEGATIVE_OVERLAP)
+		else if (patchIt->getOverlap() < PN_NEGATIVE_OVERLAP && detector.getPatchVariance().acceptPatch(*patchIt, 0.25))	//TODO: why?
+		//else if (patchIt->getOverlap() < PN_NEGATIVE_OVERLAP)
 		{
 			negativePatches.push_back(&(*patchIt));
 		}
@@ -329,21 +328,15 @@ void Trainer::trainEnsemble(bool init)
 	}
 
 	BoundingBox positiveHull(x1, y1, x2 - x1, y2 - y1);
-	Point2f pt(positiveHull.x + (positiveHull.width - 1) * 0.5f, positiveHull.y + (positiveHull.height - 1) * 0.5f);
-
-	Mat warped = blurred(positiveHull);
-
-	//RNG rng(0);	//TODO: just for comparison
-	RNG& rng = theRNG();
 
 	for (int j = 0; j < synthesisNum; j++)
 	{
-		//int shiftH, shiftV;
-		//Mat warpedImg;
+		int shiftH, shiftV;
+		Mat warpedImg;
 
 		if (j > 0)
 		{
-			/*shiftH = (int)(rng.uniform(-shiftChange * frame.cols, shiftChange * frame.cols) + 0.5);
+			shiftH = (int)(rng.uniform(-shiftChange * frame.cols, shiftChange * frame.cols) + 0.5);
 			shiftV = (int)(rng.uniform(-shiftChange * frame.rows, shiftChange * frame.rows) + 0.5);
 			double scale = 1 + rng.uniform(-scaleChange, scaleChange);
 			double rotation = rng.uniform(-rotationChange, rotationChange);
@@ -355,15 +348,14 @@ void Trainer::trainEnsemble(bool init)
 			Mat gaussianNoise(warpedImg.size(), CV_8S);
 			rng.fill(gaussianNoise, RNG::NORMAL, 0, INIT_GAUSSIAN_SIGMA);
 
-			add(warpedImg, gaussianNoise, warpedImg, noArray(), CV_8U);*/
-			generator(frame, pt, warped, positiveHull.size(), rng);
+			add(warpedImg, gaussianNoise, warpedImg, noArray(), CV_8U);
 		}
-		/*else
+		else
 		{
 			warpedImg = blurred;
 			shiftH = 0;
 			shiftV = 0;
-		}*/
+		}
 
 		/*Mat tmp = warpedImg.clone();
 		rectangle(tmp, positiveHull, Scalar(255,0,0), 1);
@@ -373,11 +365,9 @@ void Trainer::trainEnsemble(bool init)
 
 		for (int i = 0; i < min(positiveNum, (int)positivePatches.size()); i++)
 		{
-			//Mat warpedPatch = warpedImg(*positivePatches[i]);
-			//warpedPatch.adjustROI(-shiftV, shiftV, -shiftH, shiftH);
-			//ensembleSamples.push_back(make_pair<Mat,bool>(warpedPatch, true));
-			Mat warpedPatch = blurred(*positivePatches[i]);
-			ensembleSamples.push_back(make_pair<Mat,bool>(warpedPatch.clone(), true));
+			Mat warpedPatch = warpedImg(*positivePatches[i]);
+			warpedPatch.adjustROI(-shiftV, shiftV, -shiftH, shiftH);
+			ensembleSamples.push_back(make_pair<Mat,bool>(warpedPatch, true));
 			/*if (i == 0)
 			{
 				imshow("test", warpedPatch);
@@ -387,42 +377,29 @@ void Trainer::trainEnsemble(bool init)
 	}
 	
 	//add negative samples
-	//int negSize = init ? negativePatches.size() / 2 : negativePatches.size();
-	int negSize = negativePatches.size();
-	for (int i = 0; i < negSize; i++)	//TODO: for comparison, just take half
+	for (int i = 0; i < negativePatches.size() / 2; i++)	//TODO: for comparison, just take half
 	{
 		const BoundingBox& patch = *negativePatches[i];
-		if (!detector.getPatchVariance().acceptPatch(patch, 0.25))	//TODO: why?
-		{
-			continue;
-		}
-		//ensembleSamples.push_back(make_pair<Mat, bool>(blurred(patch), false));
-		ensembleSamples.push_back(make_pair<Mat, bool>(frame(patch), false));
+		ensembleSamples.push_back(make_pair<Mat, bool>(blurred(patch), false));
+		//ensembleSamples.push_back(make_pair<Mat, bool>(frame(patch), false));
 	}
 
 	//shuffle
 	random_shuffle(ensembleSamples.begin(), ensembleSamples.end());
-	
 
 	int posCount = 0, negCount = 0;
 	for (int i = 0; i < ensembleSamples.size(); i++)
 	{
 		double posterior = detector.getEnsembleClassifier().getPosterior(ensembleSamples[i].first);
-		if (ensembleSamples[i].second)		//TODO: evaluate threshold
+		if (ensembleSamples[i].second && posterior <= 0.5)		//TODO: evaluate threshold
 		{
-			if (posterior <= 0.5)
-			{
-				detector.getEnsembleClassifier().train(ensembleSamples[i].first, true);
-				posCount++;
-			}
+			detector.getEnsembleClassifier().train(ensembleSamples[i].first, true);
+			posCount++;
 		}
-		else
+		else if (!ensembleSamples[i].second && posterior >= 0.5)
 		{
-			if (posterior >= 0.5)
-			{
-				detector.getEnsembleClassifier().train(ensembleSamples[i].first, false);
-				negCount++;
-			}
+			detector.getEnsembleClassifier().train(ensembleSamples[i].first, false);
+			negCount++;
 		}
 	}
 

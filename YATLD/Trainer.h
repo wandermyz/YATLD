@@ -17,8 +17,6 @@ private:
 	cv::RNG rng;
 	cv::Mat frame;
 
-	cv::PatchGenerator generator;
-
 	bool reliable;
 	bool resultFound;
 
