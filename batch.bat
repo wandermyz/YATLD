@@ -1,4 +1,4 @@
-set dir=Z:\Evaluation\datasets
+set dir=datasets
 x64\Release\YATLD.exe %dir% 01 david
 x64\Release\YATLD.exe %dir% 02 jumping
 x64\Release\YATLD.exe %dir% 03 pedestrian1

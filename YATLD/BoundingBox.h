@@ -6,15 +6,15 @@
 
 typedef enum
 {
-	UnknownState,
-	RejectedByVariance,
-	RejectedByEnsemble,
-	RejectedByNN,
-	DetectedAcceptedByNN,
-	DetectedCluster,
-	TrackedRejectedByNN,
-	TrackedAcceptedByNN,
-	TrackedWeighted,
+	UnknownState,	//0
+	RejectedByVariance,	//1
+	RejectedByEnsemble,	//2
+	RejectedByNN,		//3
+	DetectedAcceptedByNN,	//4
+	DetectedCluster,		//5
+	TrackedRejectedByNN,	//6
+	TrackedAcceptedByNN,	//7
+	TrackedWeighted,		//8
 } PatchState;
 
 class BoundingBox : public cv::Rect
